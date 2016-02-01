@@ -9,10 +9,9 @@ import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import src.wsa.web.*;
 
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
@@ -35,28 +34,37 @@ public class MainOLD extends Application {
 
     private Parent createScene() {
         c=WebFactory.getCrawler(new HashSet<>(),new HashSet<>(),new HashSet<>(),null);
+        try {
+            //sc=WebFactory.getSiteCrawler(new URI("http://www.google.it"),null);
+            sc=WebFactory.getSiteCrawler(new URI("http://twiki.di.uniroma1.it/pub/Metod_prog/RS_L14/lezione14.html"),null);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
         Text txt = new Text("This is a text");
-        Button loader = new Button("Loader");
+        Button loader = new Button("stringhe");
         Button async = new Button("AsyncLoader");
         Button crawlerStartbtn=new Button("Crawler start");
         Button crawlerSuspendbtn=new Button("Crawler suspend");
         Button risultatobtn=new Button("estrai");
-        Button checkdmn=new Button("dominio");
+        Button sitecr=new Button("sitecrawler");
 
         loader.setOnAction(v -> loaderSimple());
         async.setOnAction(v -> asyncLoader());
         crawlerStartbtn.setOnAction(v -> crawlerStart());
         crawlerSuspendbtn.setOnAction(v->crawlerSuspend());
         risultatobtn.setOnAction(v->risultato());
-        checkdmn.setOnAction(v->dominio());
+        sitecr.setOnAction(v -> scr());
 
-        VBox vb = new VBox(txt, loader, async, crawlerStartbtn, crawlerSuspendbtn, risultatobtn, checkdmn);
+        VBox vb = new VBox(txt, loader, async, crawlerStartbtn, crawlerSuspendbtn, risultatobtn, sitecr);
         vb.setAlignment(Pos.CENTER);
         vb.setSpacing(30);
         return vb;
     }
 
     public static void loaderSimple(){
+        /*
         SimpleLoader simpleLoader = new SimpleLoader();
         URL[] url=new URL[1];
         try {
@@ -70,6 +78,57 @@ public class MainOLD extends Application {
             System.out.println(r.url+"|"+r.parsed.getLinks().size());
             System.out.println("Tempo: "+(System.currentTimeMillis()-t));
         }).start();
+        */
+        //String s="https://www.google.it/search?q=java 8 string";
+        String s="http://www.google.it/intl/it/business/?gmbsrc=it-ww-et-gs-z-gmb-s-z-h~ser|sitemapb|u&ppsrc=GMBES&utm_campaign=it-ww-et-gs-z-gmb-s-z-h~ser|sitemapb|u&utm_source=gmb&utm_medium=et";
+
+        String reserved="!*'();:@&=+$,/?#[] ";
+        String s1=s.substring(0,s.indexOf("//")+2);
+        s1=s1.replace(" ","");
+        String s2=s.substring(s.indexOf("//")+2);
+        System.out.println(s1+" | "+s2);
+        String[] split=s2.split("/");
+        String finale=s1;
+
+        for(int i=0;i<split.length;i++) {
+            String x=split[i];
+            ArrayList<String> xParts=new ArrayList<>();
+
+            int last=0;
+            for(int j=0;j<x.length();j++){
+                if(reserved.contains(Character.toString(x.charAt(j)))) {
+                    String x1 = x.substring(last, j);
+                    xParts.add(x1);
+                    String x2 = "" + x.charAt(j);
+                    xParts.add(x2);
+                    last=j+1;
+                }
+            }
+            x = x.substring(last);
+            xParts.add(x);
+
+            String[] xEncoded={};
+            xEncoded=xParts.toArray(xEncoded);
+
+            for(int j=0;j<xEncoded.length;j++){
+                String xP=xEncoded[j];
+                if(!reserved.contains(xP))
+                    try {
+                        xP=URLEncoder.encode(xP, "UTF-8");
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+                if(xP.equals(" "))
+                    xP="%20";
+                xEncoded[j]=xP;
+            }
+
+            x=String.join("",xEncoded);
+            split[i]=x;
+        }
+
+        finale+=String.join("/",split);
+        System.out.println(finale);
     }
 
     public static void asyncLoader(){
@@ -143,9 +202,17 @@ public class MainOLD extends Application {
                 e.printStackTrace();
             }
         }).start();
+
+        /*
+        new Thread(()->{
+            while(true){
+                risultato();
+            }
+        }).start();
+        */
     }
 
-    public void risultato(){
+    public static void risultato(){
         Optional<CrawlerResult> res;
         res = c.get();
         if(res.isPresent()) {
@@ -158,14 +225,16 @@ public class MainOLD extends Application {
         c.suspend();
     }
 
-    public void dominio(){
-        try {
-            System.out.println(LocalDateTime.now().toString().replace(":", "h").replace(".", "_"));
-
-            System.out.println(SiteCrawler.checkDomain(new URI("http://www8.hp.com/it/it/home.html")));
-            System.out.println(SiteCrawler.checkSeed(new URI("http://google.it/"),new URI("http://google.it/doodles")));
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
+    public void scr(){
+        sc.start();
+        new Thread(()->{
+            while(true) {
+                Optional<CrawlerResult> t = sc.get();
+                if (t.isPresent()) {
+                    CrawlerResult cr = t.get();
+                    System.out.println(cr.uri + " || " + cr.linkPage + "||" + (cr.links == null ? null : cr.links.size()) + " || " + cr.exc);
+                }
+            }
+        }).start();
     }
 }

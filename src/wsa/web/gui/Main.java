@@ -14,12 +14,14 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import src.wsa.web.SiteCrawler;
 
+import java.net.URI;
 
 
 public class Main extends Application {
     Stage stage;
-    private final ObservableList<UriTableView> data = FXCollections.observableArrayList();
+    public static ObservableList<UriTableView> data = FXCollections.observableArrayList();
 
 
     public static void main(String[] args) {
@@ -28,11 +30,6 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        Text t = new Text("http://www.google.it/doodles");
-        ProgressBar pi = new ProgressBar(.6);
-
-
-        data.add(new UriTableView(t, pi));
 
 
         stage = primaryStage;
@@ -76,7 +73,7 @@ public class Main extends Application {
 
 
 
-    TableView griglia;
+    public static TableView griglia;
     /**
      *  creazione della tableview
      * @return
@@ -88,39 +85,46 @@ public class Main extends Application {
 
         //colonne
         TableColumn links = new TableColumn("Links visitati");
-        links.setPrefWidth(848);
+        //links.setPrefWidth(945);
+        links.setPrefWidth(855);
         links.setCellValueFactory(
-                new PropertyValueFactory<UriTableView, Object>("uri"));
-        TableColumn progress = new TableColumn("Progresso");
-        progress.setPrefWidth(110);
-        progress.setCellValueFactory(
-                new PropertyValueFactory<UriTableView, Object>("p"));
-        progress.setResizable(false);
+                new PropertyValueFactory<UriTableView, URI>("uri"));
+
         links.setResizable(false);
+
+        TableColumn stato = new TableColumn("Stato");
+        stato.setPrefWidth(90);
+        stato.setCellValueFactory(
+                new PropertyValueFactory<UriTableView, String>("stato"));
+
+        stato.setResizable(false);
 
 
         griglia.setRowFactory(e -> {
             TableRow<UriTableView> row = new TableRow<>();
+
             row.setOnMouseClicked(g -> {
+
+
                 if (spMain.getItems().size() < 2) {
                     final Pane st = new StackPane();
                     st.setMinWidth(400);
                     st.setMaxWidth(400);
                     spMain.getItems().add(st);
-                    SchedaSito.showSchedaSito(spMain);
+                    SchedaSito.showSchedaSito(spMain, stage);
                     TableColumn tb = (TableColumn) griglia.getColumns().get(0);
-                    tb.setPrefWidth(442);
+                    tb.setPrefWidth(450);
 
                 }
 
 
-                if (row.getIndex() > 10)
+                /*if (row.getIndex() > 10)
                     row.setStyle("-fx-background-color: #FFEBEB;" +
                             "-fx-border-style: solid line-join round;" +
                             "-fx-border-width: 0.1px");
                 else row.setStyle("-fx-background-color: #F2FFF2;" +
                         "-fx-border-style: solid line-join round;" +
-                        "-fx-border-width: 0.1px");
+                        "-fx-border-width: 0.1px");*/
 
 
             });
@@ -135,12 +139,15 @@ public class Main extends Application {
 
         griglia.setItems(data);
 
-        griglia.getColumns().addAll(links, progress);
+        griglia.getColumns().addAll(links, stato);
 
         griglia.setPrefHeight(570);
         sp.getItems().add(griglia);
         sp.setOrientation(Orientation.VERTICAL);
         spMain.getItems().add(sp);
+
+
+
 
         return spMain;
 
@@ -152,8 +159,8 @@ public class Main extends Application {
     private Parent bottoniPrincipali(){
 
         //bottone start
-        Image play = new Image(getClass().getResourceAsStream("/rsz_down.png"));
-        Button StartBtn = WindowsManager.createButton(null, 40, 40, play, false);
+        Image down = new Image(getClass().getResourceAsStream("/rsz_down.png"));
+        Button StartBtn = WindowsManager.createButton(null, 40, 40, down, false);
 
 
         //bottone pausa
@@ -178,10 +185,17 @@ public class Main extends Application {
         StartBtn.setOnAction(e -> DirectoryWindow.showDirectoryWindow(stage));
 
         suspendBtn.setOnAction(e -> {
-            StartBtn.setDisable(false);
-            suspendBtn.setDisable(true);
-            stopBtn.setDisable(true);
-            piu.setDisable(true);
+            SiteCrawler siteCrawler = DirectoryWindow.getSiteCrawler();
+            if(siteCrawler.isRunning()){
+                Image play = new Image(getClass().getResourceAsStream("/rsz_play.png"));
+                suspendBtn.setGraphic(new ImageView(play));
+                siteCrawler.suspend();
+            }
+            else {
+                suspendBtn.setGraphic(new ImageView(pause));
+                siteCrawler.start();
+            }
+
         });
 
         stopBtn.setOnAction(e -> {
@@ -189,6 +203,9 @@ public class Main extends Application {
             suspendBtn.setDisable(true);
             stopBtn.setDisable(true);
             piu.setDisable(true);
+            SiteCrawler siteCrawler = DirectoryWindow.getSiteCrawler();
+            siteCrawler.cancel();
+            suspendBtn.setGraphic(new ImageView(pause));
         });
 
         piu.setOnAction(e -> {

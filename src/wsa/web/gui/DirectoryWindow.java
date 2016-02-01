@@ -1,5 +1,6 @@
 package src.wsa.web.gui;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
@@ -15,8 +16,20 @@ import javafx.scene.text.Text;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import src.wsa.web.gui.WindowsManager;
+import src.wsa.web.Crawler;
+import src.wsa.web.SiteCrawler;
+import src.wsa.web.WebFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by User on 07/01/2016.
@@ -24,6 +37,7 @@ import java.io.File;
 public class DirectoryWindow {
     static Stage stage; //stage principale
     static ObservableList<String> listItems = FXCollections.observableArrayList(); //lista degli items nella listview
+    static private SiteCrawler siteCrawler;
 
     /** Crea e mostra la finestra della directory
      * @param primaryStage lo stage della finestra principale*/
@@ -206,10 +220,13 @@ public class DirectoryWindow {
 
         ok.setOnAction(e -> {
             HBox a = (HBox)primaryStage.getScene().getRoot().getChildrenUnmodifiable().get(0);
-            a.getChildren().get(0).setDisable(true);
+            //a.getChildren().get(0).setDisable(true);
             for(int i=1; i<=3; i++){
                 a.getChildren().get(i).setDisable(false);
             }
+
+            new Thread(() -> siteCrawlerStart(dominionTxt, directoryTxt)).start();
+
             stage.close();
 
         });
@@ -219,4 +236,63 @@ public class DirectoryWindow {
         });
 
     }
+
+
+    private static void siteCrawlerStart(TextField dominioTxt, TextField directoryTxt){
+        String dominio = null;
+        String directory = null;
+        List seeds;
+        Path path = null;
+        URI dom = null;
+
+        if (!dominioTxt.getText().equals("")){
+            dominio = dominioTxt.getText();
+            if(!dominio.contains("http://")) dominio = "http://" + dominioTxt.getText();
+            try {
+                dom = new URI(dominio);
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (!directoryTxt.getText().equals("") && !directoryTxt.isDisabled()){
+            directory = directoryTxt.getText();
+            if (Files.exists(Paths.get(directory))) path = Paths.get(directory);
+        }
+
+
+        VBox centerBox = (VBox) stage.getScene().getRoot().getChildrenUnmodifiable().get(1);
+        HBox listaBox = (HBox) centerBox.getChildren().get(1);
+        ListView listSeeds = (ListView) listaBox.getChildren().get(2);
+        seeds = new ArrayList<>(listSeeds.getItems());
+
+
+
+
+        try {
+            siteCrawler = WebFactory.getSiteCrawler(dom, path);
+            siteCrawler.addSeed(dom);
+            for(Object seed: seeds){
+                String stringaSeed = (String) seed;
+                if (!stringaSeed.contains("http://")) stringaSeed = "https://" + stringaSeed;
+                URI uriSeed = new URI(stringaSeed);
+                siteCrawler.addSeed(uriSeed);
+            }
+            siteCrawler.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    public static SiteCrawler getSiteCrawler(){
+        return siteCrawler;
+    }
+
+
+
+
 }

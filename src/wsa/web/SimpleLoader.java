@@ -14,10 +14,8 @@ public class SimpleLoader implements Loader{
     private volatile CountDownLatch latch;
 
     public SimpleLoader(){
-        engine = new WebEngine();
-
-        //listner della WebEngine
         Platform.runLater(() -> {
+            engine = new WebEngine();
             engine.getLoadWorker().stateProperty().addListener((o, ov, nv) -> {
                 if (nv == Worker.State.SUCCEEDED) {
                     if (engine.getDocument() != null) {
@@ -31,11 +29,9 @@ public class SimpleLoader implements Loader{
                     ex = null;
 
                 } else if (nv == Worker.State.FAILED) {
-                    //done=true;
                     ex = new Exception("Errore durante il download");
 
                 } else if (nv == Worker.State.CANCELLED) {
-                    //done = true;
                     ex = new Exception("Download annullato");
                 }
             });
@@ -58,6 +54,7 @@ public class SimpleLoader implements Loader{
         try {
             latch.await();
         } catch (InterruptedException e) {
+            ex=new Exception("Interrotto");
         }
 
         latch=new CountDownLatch(1);
@@ -67,6 +64,7 @@ public class SimpleLoader implements Loader{
         try {
             latch.await();
         } catch (InterruptedException e) {
+            ex=new Exception("Interrotto");
         }
 
         return new LoadResult(url, parsed, ex);

@@ -1,6 +1,9 @@
 package src.wsa.web.gui;
 
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+
+import java.net.URI;
 
 
 /**
@@ -8,11 +11,13 @@ import javafx.beans.property.SimpleObjectProperty;
  */
 public class UriTableView {
     private final SimpleObjectProperty uri;
-    private final SimpleObjectProperty p;
+    private final SimpleStringProperty stato;
 
-    protected UriTableView(Object uri, Object p) {
+
+    public UriTableView(URI uri, String stato) {
         this.uri = new SimpleObjectProperty(uri);
-        this.p = new SimpleObjectProperty(p);
+        this.stato = new SimpleStringProperty(stato);
+
     }
 
     public Object getUri() {
@@ -25,14 +30,12 @@ public class UriTableView {
         this.uri.set(uri);
     }
 
-
-    public Object getP() {
-        return p.get();
+    public String getStato() {
+        return stato.get();
     }
 
 
-
-    public void setP(Object p) {
-        this.p.set(p);
+    public void setStato(String stato) {
+        this.stato.set(stato);
     }
 }

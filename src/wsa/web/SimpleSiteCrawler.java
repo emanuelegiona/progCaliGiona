@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Predicate;
 
 public class SimpleSiteCrawler implements SiteCrawler{
@@ -19,25 +20,29 @@ public class SimpleSiteCrawler implements SiteCrawler{
     private volatile Set<URI> failDownload;
     private final Crawler crawler;
     private final Predicate<URI> pageLink;
-    private volatile Map<Integer,Object[]> results;
-    private volatile int resIndex;
+    private volatile ConcurrentLinkedQueue<CrawlerResult> results;
     private String savePath;
     private Thread crawlingThread;
+
+    //TODO: aggiungere merda alla tableview con:
+    //Platform.runLater(() -> Main.data.add(new UriTableView(uri)));
 
     public SimpleSiteCrawler(URI dom, Path dir) throws IllegalArgumentException,IOException{
         this.dom=dom;
         this.dir=dir;
 
         savePath = this.dir + "\\" + dom.getAuthority()+"h"+LocalDateTime.now().toString().replace(":", "m").replace(".", "_") +".cg";
-        if(dom!=null && dir!=null) {
+        if(dom!=null && dir==null) {
             succDownload = new HashSet<>();
             toDownload = new HashSet<>();
             failDownload = new HashSet<>();
-            results=new ConcurrentHashMap<>();
-
-            Object[] array={this.dom,succDownload,toDownload,failDownload,results};
-            WindowsManager.salvaArchivio(this.dom,savePath,array);
+            results=new ConcurrentLinkedQueue<>();
         }
+
+        if(dir!=null) {
+            update();
+        }
+
         if(dom==null && dir!=null){
             String s=dir.toString();
             s=s.substring(0,s.lastIndexOf("h")+1);
@@ -49,7 +54,7 @@ public class SimpleSiteCrawler implements SiteCrawler{
                 succDownload=(Set<URI>)array[1];
                 toDownload=(Set<URI>)array[2];
                 failDownload=(Set<URI>)array[3];
-                results=(Map<Integer,Object[]>)array[4];
+                results=(ConcurrentLinkedQueue<CrawlerResult>)array[4];
             } catch (URISyntaxException e) {
                 throw new IllegalArgumentException("ERRORE: il file non contiene un archivio.");
             }
@@ -72,25 +77,12 @@ public class SimpleSiteCrawler implements SiteCrawler{
      */
     @Override
     public void addSeed(URI uri) throws IllegalArgumentException,IllegalStateException{
-        if(!isCancelled()){
-            if(pageLink.test(uri)){
-                succDownload=crawler.getLoaded();
-                toDownload=crawler.getToLoad();
-                failDownload=crawler.getErrors();
-
-                Set<URI> allURIs=new HashSet<>(succDownload);
-                allURIs.addAll(toDownload);
-                allURIs.addAll(failDownload);
-                if(!allURIs.contains(uri)) {
-                    toDownload.add(uri);
-                    crawler.getToLoad().add(uri);
-                }
-            }
-            else
-                throw new IllegalArgumentException();
-        }
-        else
+        if(isCancelled())
             throw new IllegalStateException();
+        if(!SiteCrawler.checkSeed(dom,uri))
+            throw new IllegalArgumentException();
+        toDownload.add(uri);
+        crawler.add(uri);
     }
 
     /**
@@ -104,6 +96,8 @@ public class SimpleSiteCrawler implements SiteCrawler{
     public void start() throws IllegalStateException{
         if(isCancelled())
             throw new IllegalStateException();
+
+        addSeed(dom);
         if(!isRunning() && !toDownload.isEmpty()){
             crawler.start();
 
@@ -111,21 +105,23 @@ public class SimpleSiteCrawler implements SiteCrawler{
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    Object[] array={dom,succDownload,toDownload,failDownload,results};
-                    WindowsManager.salvaArchivio(dom, savePath, array);
+                    /*update();*/
+                    System.out.println("timer");
                 }
             }, 60000, 120000);
 
             crawlingThread=new Thread(()->{
+                //System.out.println("crawlingThread");
                 while(crawler.isRunning()){
+                    //System.out.println("sto aggiornando i risultati");
                     if(crawlingThread.isInterrupted())
                         break;
 
                     Optional<CrawlerResult> cr=crawler.get();
-                    if(cr.isPresent()) {
-                        Object[] val={1,cr.get()};
-                        results.put(resIndex++, val);
-                    }
+                    if(cr.isPresent())
+                        results.add(cr.get());
+
+                    //System.out.println("ris: "+results.size());
                 }
             });
             crawlingThread.setDaemon(true);
@@ -144,7 +140,16 @@ public class SimpleSiteCrawler implements SiteCrawler{
      */
     @Override
     public void suspend() throws IllegalStateException{
+        if(isCancelled())
+            throw new IllegalStateException();
+        if(isRunning()){
+            crawler.suspend();
+            crawlingThread.interrupt();
 
+            if(dir!=null){
+                update();
+            }
+        }
     }
 
     /**
@@ -170,8 +175,12 @@ public class SimpleSiteCrawler implements SiteCrawler{
     public Optional<CrawlerResult> get() throws IllegalStateException{
         if(isCancelled())
             throw new IllegalStateException();
+        /*
         if(isRunning() && !results.isEmpty() && results.keySet().contains(resIndex))
             return Optional.of((CrawlerResult)results.get(resIndex++)[1]);
+        */
+        if(isRunning() && !results.isEmpty())
+            return Optional.of(results.poll());
         return Optional.empty();
     }
 
@@ -193,10 +202,21 @@ public class SimpleSiteCrawler implements SiteCrawler{
             throw new IllegalArgumentException();
 
         CrawlerResult res=null;
+        /*
         for(int i:results.keySet()){
             res=(CrawlerResult)results.get(i)[1];
             if(res.uri==uri)
                 return res;
+        }
+        */
+        boolean found=false;
+        while(!results.isEmpty() && !found){
+            CrawlerResult cr=results.poll();
+            if(cr.uri==uri) {
+                res = cr;
+                found=true;
+            }
+            results.add(cr);
         }
         return res;
     }
@@ -262,5 +282,13 @@ public class SimpleSiteCrawler implements SiteCrawler{
     @Override
     public boolean isCancelled() {
         return crawler.isCancelled();
+    }
+
+    private void update(){
+        succDownload=crawler.getLoaded();
+        toDownload=crawler.getToLoad();
+        failDownload=crawler.getErrors();
+        Object[] array = {this.dom, succDownload, toDownload, failDownload, results};
+        WindowsManager.salvaArchivio(this.dom, savePath, array);
     }
 }

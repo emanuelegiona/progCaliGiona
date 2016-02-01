@@ -1,5 +1,8 @@
 package src.wsa.web;
 
+import src.wsa.web.gui.Main;
+import src.wsa.web.gui.UriTableView;
+
 import java.io.UnsupportedEncodingException;
 import java.net.*;
 import java.util.*;
@@ -7,23 +10,24 @@ import java.util.concurrent.*;
 import java.util.function.Predicate;
 
 public class SimpleCrawler implements Crawler{
-    private volatile Set<URI> succDownload;
-    private volatile Set<URI> analyzingURIs;
+    private Set<URI> succDownload;
+    private Set<URI> analyzingURIs;
     private volatile Set<URI> toDownload;
-    private volatile Set<URI> failDownload;
+    private Set<URI> failDownload;
     private final Predicate<URI> rule;
-    private volatile AsyncLoader loader;
+    private AsyncLoader loader;
     private volatile boolean running;
-    private volatile ConcurrentLinkedQueue<Object[]> tasks;
-    private volatile ConcurrentLinkedQueue<CrawlerResult> results;
-    private volatile Thread taskThread;
-    private volatile Thread analyzeThread;
+    private ConcurrentLinkedQueue<Object[]> tasks;
+    private ConcurrentLinkedQueue<CrawlerResult> results;
+    private Thread analyzeThread;
+    private volatile Map<URI, UriTableView> tableMap;
 
     public SimpleCrawler(Collection<URI> succDownload, Collection<URI> toDownload, Collection<URI> failDownload, Predicate<URI> rule) {
-        this.succDownload = new ConcurrentSkipListSet<>(succDownload);
-        this.toDownload = new ConcurrentSkipListSet<>(toDownload);
-        this.failDownload = new ConcurrentSkipListSet<>(failDownload);
-        this.analyzingURIs=new ConcurrentSkipListSet<>();
+        this.succDownload = new HashSet<>(succDownload);
+        this.toDownload = new HashSet<>(toDownload);
+        this.failDownload = new HashSet<>(failDownload);
+        this.analyzingURIs=new HashSet<>();
+
         if(rule!=null)
             this.rule=rule;
         else
@@ -32,6 +36,8 @@ public class SimpleCrawler implements Crawler{
         running=false;
         tasks =new ConcurrentLinkedQueue<>();
         results=new ConcurrentLinkedQueue<>();
+
+        tableMap = new HashMap<>();
     }
 
     /**
@@ -50,36 +56,34 @@ public class SimpleCrawler implements Crawler{
         if(!toDownload.contains(uri) && !succDownload.contains(uri) && !failDownload.contains(uri) && !analyzingURIs.contains(uri)) {
             toDownload.add(uri);
             System.out.println(uri);
+
+            UriTableView utv = new UriTableView(uri, " In Download...");
+            tableMap.put(uri, utv);
+            Main.data.add(utv);
         }
     }
 
     private void downloadFunc(){
-        while (true) {
-            if(taskThread.isInterrupted()) {
-                taskThread.interrupt();
-                return;
+        for (URI u : toDownload) {
+            if (analyzeThread.isInterrupted()) {
+                analyzeThread.interrupt();
+                break;
             }
 
-            Iterator<URI> uris = toDownload.iterator();
-            while (uris.hasNext()) {
-                URI u = uris.next();
-                boolean tested = rule.test(u);
-                try {
-                    Object o[]={u,loader.submit(u.toURL()),4};
-                    tasks.add(o);
-                    analyzingURIs.add(u);
-                } catch (MalformedURLException e) {
-                    failDownload.add(u);
-                    results.add(new CrawlerResult(u, tested, null, null, e));
-                }
-                uris.remove();
+            if(analyzingURIs.size()==Runtime.getRuntime().availableProcessors()*2)
+                break;
 
-                if(taskThread.isInterrupted()) {
-                    taskThread.interrupt();
-                    break;
-                }
+            boolean tested = rule.test(u);
+            try {
+                Object o[] = {u, loader.submit(u.toURL()), 4};
+                tasks.add(o);
+                analyzingURIs.add(u);
+            } catch (MalformedURLException e) {
+                failDownload.add(u);
+                results.add(new CrawlerResult(u, tested, null, null, e));
             }
         }
+        toDownload.removeAll(analyzingURIs);
     }
 
     private URI bonifica(String s){
@@ -87,14 +91,52 @@ public class SimpleCrawler implements Crawler{
         try {
             uri=URI.create(s);
         }catch(IllegalArgumentException e1) {
-            try {
-                s=s.replace(" ","+");
-                int p1 = s.lastIndexOf(" ") + 1;
-                s = s.substring(0, p1) + s.substring(p1);
-                int p2 = s.lastIndexOf("/") + 1;
-                s = s.substring(0, p2) + URLEncoder.encode(s.substring(p2), "UTF-8");
-                uri = URI.create(s);
-            } catch (UnsupportedEncodingException e2) {}
+            String reserved="!*'();:@&=+$,/?#[] ";
+            String s1=s.substring(0,s.indexOf("//")+2);
+            s1=s1.replace(" ","");
+            String s2=s.substring(s.indexOf("//")+2);
+            System.out.println(s1+" | "+s2);
+            String[] split=s2.split("/");
+            String finale=s1;
+
+            for(int i=0;i<split.length;i++) {
+                String x=split[i];
+                ArrayList<String> xParts=new ArrayList<>();
+
+                int last=0;
+                for(int j=0;j<x.length();j++){
+                    if(reserved.contains(Character.toString(x.charAt(j)))) {
+                        String x1 = x.substring(last, j);
+                        xParts.add(x1);
+                        String x2 = "" + x.charAt(j);
+                        xParts.add(x2);
+                        last=j+1;
+                    }
+                }
+                x = x.substring(last);
+                xParts.add(x);
+
+                String[] xEncoded={};
+                xEncoded=xParts.toArray(xEncoded);
+
+                for(int j=0;j<xEncoded.length;j++){
+                    String xP=xEncoded[j];
+                    if(!reserved.contains(xP))
+                        try {
+                            xP=URLEncoder.encode(xP, "UTF-8");
+                        } catch (UnsupportedEncodingException e) {
+                            e.printStackTrace();
+                        }
+                    if(xP.equals(" "))
+                        xP="%20";
+                    xEncoded[j]=xP;
+                }
+
+                x=String.join("",xEncoded);
+                split[i]=x;
+            }
+            finale+=String.join("/",split);
+            uri=URI.create(finale);
         }
         return uri;
     }
@@ -106,35 +148,43 @@ public class SimpleCrawler implements Crawler{
                 return;
             }
 
+            if(toDownload.size()==0)
+                continue;
+            downloadFunc();
+
             Object[] o;
-            while((o=tasks.poll())!=null){
+            while((o=tasks.poll())!= null){
                 if(analyzeThread.isInterrupted()) {
                     analyzeThread.interrupt();
                     break;
                 }
 
                 Future<LoadResult> t=(Future<LoadResult>)o[1];
-
                 try {
                     LoadResult res=t.get(2000,TimeUnit.MILLISECONDS);
                     try {
                         URI u = res.url.toURI();
+
+                        UriTableView utv = tableMap.get(u);
+                        utv.setStato("Completato.");
+                        Main.data.set(Main.data.indexOf(utv),utv);
+
                         analyzingURIs.remove(u);
                         succDownload.add(u);
 
                         List<String> links = res.parsed.getLinks();
                         List<URI> absLinks = new ArrayList<>();
                         List<String> errLinks = new ArrayList<>();
-                        Iterator<String> l = links.iterator();
+
+                        //TODO: devo trasferire le linee di codice che fanno "compeltato" nella tabella nel site crawler e metterci anche il codice di "fallito"
 
                         if (rule.test(u)) {
-                            while (l.hasNext()) {
+                            System.out.println();
+                            for (String s: links) {
                                 if (analyzeThread.isInterrupted()) {
                                     analyzeThread.interrupt();
                                     break;
                                 }
-
-                                String s = l.next();
                                 URI uri = bonifica(s);
                                 URI nUri = u.resolve(uri);
                                 try {
@@ -145,8 +195,6 @@ public class SimpleCrawler implements Crawler{
                                     errLinks.add(s);
                                     if(failDownload.add(nUri))
                                         results.add(new CrawlerResult(nUri,rule.test(nUri),null,null,e));
-                                } finally {
-                                    l.remove();
                                 }
                             }
                         }
@@ -188,12 +236,6 @@ public class SimpleCrawler implements Crawler{
         if(!isRunning()){
             running=true;
 
-            taskThread=new Thread(()->{
-                downloadFunc();
-            });
-            taskThread.setDaemon(true);
-            taskThread.start();
-
             analyzeThread=new Thread(()->{
                 analyzeFunc();
             });
@@ -215,7 +257,7 @@ public class SimpleCrawler implements Crawler{
         if(isCancelled())
             throw new IllegalStateException();
         if (isRunning()) {
-            taskThread.interrupt();
+            //taskThread.interrupt();
             analyzeThread.interrupt();
             running=false;
         }
