@@ -1,4 +1,4 @@
-package src.wsa.web.gui;
+package src.wsa.gui;
 
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -10,9 +10,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 
 import java.net.URL;
 

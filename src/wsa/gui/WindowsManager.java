@@ -1,4 +1,4 @@
-package src.wsa.web.gui;
+package src.wsa.gui;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

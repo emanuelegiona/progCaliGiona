@@ -1,4 +1,4 @@
-package src.wsa.web.gui;
+package src.wsa.gui;
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
@@ -12,7 +12,6 @@ import src.wsa.web.*;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.*;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 

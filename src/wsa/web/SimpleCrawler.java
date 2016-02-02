@@ -1,7 +1,7 @@
 package src.wsa.web;
 
-import src.wsa.web.gui.Main;
-import src.wsa.web.gui.UriTableView;
+import src.wsa.gui.Main;
+import src.wsa.gui.UriTableView;
 
 import java.io.UnsupportedEncodingException;
 import java.net.*;

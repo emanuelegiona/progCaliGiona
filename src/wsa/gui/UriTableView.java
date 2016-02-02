@@ -1,4 +1,4 @@
-package src.wsa.web.gui;
+package src.wsa.gui;
 
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;

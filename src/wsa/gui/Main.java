@@ -1,4 +1,4 @@
-package src.wsa.web.gui;
+package src.wsa.gui;
 
 import javafx.application.Application;
 import javafx.collections.FXCollections;
@@ -12,7 +12,6 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import src.wsa.web.SiteCrawler;
 

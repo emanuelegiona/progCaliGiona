@@ -1,6 +1,5 @@
-package src.wsa.web.gui;
+package src.wsa.gui;
 
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
@@ -16,8 +15,6 @@ import javafx.scene.text.Text;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import src.wsa.web.gui.WindowsManager;
-import src.wsa.web.Crawler;
 import src.wsa.web.SiteCrawler;
 import src.wsa.web.WebFactory;
 

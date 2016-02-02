@@ -1,6 +1,6 @@
 package src.wsa.web;
 
-import src.wsa.web.gui.WindowsManager;
+import src.wsa.gui.WindowsManager;
 
 import java.io.IOException;
 import java.net.URI;
@@ -8,7 +8,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Predicate;
 
