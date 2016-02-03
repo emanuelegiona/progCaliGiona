@@ -4,11 +4,9 @@ import src.wsa.gui.WindowsManager;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Predicate;
 
 public class SimpleSiteCrawler implements SiteCrawler{
@@ -19,7 +17,7 @@ public class SimpleSiteCrawler implements SiteCrawler{
     private volatile Set<URI> failDownload;
     private final Crawler crawler;
     private final Predicate<URI> pageLink;
-    private volatile ConcurrentLinkedQueue<CrawlerResult> results;
+    private volatile HashMap<URI,CrawlerResult> results;
     private String savePath;
     private Thread crawlingThread;
 
@@ -35,27 +33,17 @@ public class SimpleSiteCrawler implements SiteCrawler{
             succDownload = new HashSet<>();
             toDownload = new HashSet<>();
             failDownload = new HashSet<>();
-            results=new ConcurrentLinkedQueue<>();
-        }
-
-        if(dir!=null) {
-            update();
+            results=new HashMap<>();
         }
 
         if(dom==null && dir!=null){
-            String s=dir.toString();
-            s=s.substring(0,s.lastIndexOf("h")+1);
-            try {
-                URI u=new URI(s);
-                Object[] array=WindowsManager.apriArchivio(this.dir.toString());
-
-                this.dom=(URI)array[0];
-                succDownload=(Set<URI>)array[1];
-                toDownload=(Set<URI>)array[2];
-                failDownload=(Set<URI>)array[3];
-                results=(ConcurrentLinkedQueue<CrawlerResult>)array[4];
-            } catch (URISyntaxException e) {
-                throw new IllegalArgumentException("ERRORE: il file non contiene un archivio.");
+            try{
+                open("INSERIRE IL FileName DA FileChooser");
+            } catch (Exception e) {
+                if(e.getClass().equals(IOException.class))
+                    throw new IOException(e.getMessage());
+                else
+                    throw new IllegalArgumentException("ERRORE: il file non contiene un archivio.");
             }
         }
 
@@ -104,23 +92,36 @@ public class SimpleSiteCrawler implements SiteCrawler{
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    /*update();*/
-                    System.out.println("timer");
+                    update();
+                    try {
+                        save();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    //System.out.println(toDownload.size()+"||"+succDownload.size()+"||"+failDownload.size());
                 }
-            }, 60000, 120000);
+            }, /*5000*/ /**/60000/**/, /*5000*/ /**/60000/**/);
 
             crawlingThread=new Thread(()->{
-                //System.out.println("crawlingThread");
-                while(crawler.isRunning()){
-                    //System.out.println("sto aggiornando i risultati");
+                while(true){
                     if(crawlingThread.isInterrupted())
                         break;
 
-                    Optional<CrawlerResult> cr=crawler.get();
-                    if(cr.isPresent())
-                        results.add(cr.get());
+                    try {
+                        Optional<CrawlerResult> cr = get();
+                        if (cr.isPresent()) {
+                            URI u = cr.get().uri;
+                            CrawlerResult res = cr.get();
+                            results.put(u, res);
+                        }
+                    }catch(IllegalStateException e){
+                        crawlingThread.interrupt();
+                        break;
+                    }
 
-                    //System.out.println("ris: "+results.size());
+                    if(Math.abs(this.toDownload.size()+this.succDownload.size()+this.failDownload.size())-
+                    (crawler.getToLoad().size()+crawler.getLoaded().size()+crawler.getErrors().size())>30)
+                        update();
                 }
             });
             crawlingThread.setDaemon(true);
@@ -145,8 +146,11 @@ public class SimpleSiteCrawler implements SiteCrawler{
             crawler.suspend();
             crawlingThread.interrupt();
 
-            if(dir!=null){
-                update();
+            update();
+            try {
+                save();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
@@ -160,6 +164,10 @@ public class SimpleSiteCrawler implements SiteCrawler{
     public void cancel() {
         suspend();
         crawler.cancel();
+        toDownload=null;
+        succDownload=null;
+        failDownload=null;
+        results=null;
     }
 
     /**
@@ -174,13 +182,7 @@ public class SimpleSiteCrawler implements SiteCrawler{
     public Optional<CrawlerResult> get() throws IllegalStateException{
         if(isCancelled())
             throw new IllegalStateException();
-        /*
-        if(isRunning() && !results.isEmpty() && results.keySet().contains(resIndex))
-            return Optional.of((CrawlerResult)results.get(resIndex++)[1]);
-        */
-        if(isRunning() && !results.isEmpty())
-            return Optional.of(results.poll());
-        return Optional.empty();
+        return crawler.get();
     }
 
     /**
@@ -197,27 +199,12 @@ public class SimpleSiteCrawler implements SiteCrawler{
     public CrawlerResult get(URI uri) throws IllegalArgumentException,IllegalStateException{
         if(isCancelled())
             throw new IllegalStateException();
+
+        update();
         if(!succDownload.contains(uri) && !failDownload.contains(uri))
             throw new IllegalArgumentException();
 
-        CrawlerResult res=null;
-        /*
-        for(int i:results.keySet()){
-            res=(CrawlerResult)results.get(i)[1];
-            if(res.uri==uri)
-                return res;
-        }
-        */
-        boolean found=false;
-        while(!results.isEmpty() && !found){
-            CrawlerResult cr=results.poll();
-            if(cr.uri==uri) {
-                res = cr;
-                found=true;
-            }
-            results.add(cr);
-        }
-        return res;
+        return results.get(uri);
     }
 
     /**
@@ -287,7 +274,24 @@ public class SimpleSiteCrawler implements SiteCrawler{
         succDownload=crawler.getLoaded();
         toDownload=crawler.getToLoad();
         failDownload=crawler.getErrors();
-        Object[] array = {this.dom, succDownload, toDownload, failDownload, results};
-        WindowsManager.salvaArchivio(this.dom, savePath, array);
+    }
+
+    private void save() throws Exception{
+        if(dir!=null) {
+            Object[] array = {this.dom, succDownload, toDownload, failDownload, results};
+            WindowsManager.salvaArchivio(this.dom, savePath, array);
+        }
+    }
+
+    private void open(String fileName) throws Exception{
+        fileName=fileName.substring(0,fileName.lastIndexOf("h"));
+        URI u=new URI(fileName);
+        Object[] array=WindowsManager.apriArchivio(dir.toString());
+
+        this.dom=(URI)array[0];
+        this.succDownload=(Set<URI>)array[1];
+        this.toDownload=(Set<URI>)array[2];
+        this.failDownload=(Set<URI>)array[3];
+        this.results=(HashMap<URI,CrawlerResult>)array[4];
     }
 }

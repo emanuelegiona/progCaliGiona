@@ -75,7 +75,7 @@ public class WebFactory {
             throw new IllegalArgumentException("ERRORE: sia il dominio che la directory di archiviazioni sono nulli.");
         if(dom!=null && !SiteCrawler.checkDomain(dom))
             throw new IllegalArgumentException("ERRORE: dominio non valido.");
-        if(dom!=null && dir!=null && !Files.isDirectory(dir))
+        if(dom!=null && dir!=null && (!Files.isDirectory(dir) || !Files.isRegularFile(dir)))
             throw new IllegalArgumentException("ERRORE: directory non valida.");
 
         return new SimpleSiteCrawler(dom,dir);

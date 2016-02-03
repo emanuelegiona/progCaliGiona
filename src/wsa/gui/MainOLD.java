@@ -6,18 +6,24 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import src.wsa.web.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.*;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 
 public class MainOLD extends Application {
     static volatile Crawler c;
     static volatile SiteCrawler sc;
+    static Parent root;
 
     public static void main(String[] args) {
         launch(args);
@@ -25,7 +31,7 @@ public class MainOLD extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        Parent root = createScene();
+        /*Parent*/ root = createScene();
         Scene scene = new Scene(root, 400, 400);
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -48,6 +54,8 @@ public class MainOLD extends Application {
         Button crawlerSuspendbtn=new Button("Crawler suspend");
         Button risultatobtn=new Button("estrai");
         Button sitecr=new Button("sitecrawler");
+        Button salva=new Button("salva");
+        Button apri=new Button("apri");
 
         loader.setOnAction(v -> loaderSimple());
         async.setOnAction(v -> asyncLoader());
@@ -55,8 +63,10 @@ public class MainOLD extends Application {
         crawlerSuspendbtn.setOnAction(v->crawlerSuspend());
         risultatobtn.setOnAction(v->risultato());
         sitecr.setOnAction(v -> scr());
+        salva.setOnAction(v->salva());
+        apri.setOnAction(v->apri());
 
-        VBox vb = new VBox(txt, loader, async, crawlerStartbtn, crawlerSuspendbtn, risultatobtn, sitecr);
+        VBox vb = new VBox(sitecr,salva,apri);
         vb.setAlignment(Pos.CENTER);
         vb.setSpacing(30);
         return vb;
@@ -235,5 +245,58 @@ public class MainOLD extends Application {
                 }
             }
         }).start();
+    }
+
+    public void salva(){
+        URI dom=null;
+        try {
+            dom = new URI("http://www.google.it");
+        }catch(URISyntaxException e){}
+
+        Stage stage=new Stage();
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        File selectedDirectory = directoryChooser.showDialog(stage);
+        directoryChooser.setTitle("Scegli Directory");
+
+        String dir="";
+        if (selectedDirectory != null) {
+            dir = selectedDirectory.toString();
+        }
+        String savePath = dir + "\\" + dom.getAuthority()+"h"+ LocalDateTime.now().toString().replace(":", "m").replace(".", "_") +".cg";
+        System.out.println(savePath);
+        Object[] o={"ciao",true,5};
+        try {
+            WindowsManager.salvaArchivio(dom, savePath, o);
+        }catch(Exception e){}
+    }
+
+    public void apri(){
+        Stage stage=new Stage();
+        FileChooser fileChooser = new FileChooser();
+        File selectedFile = fileChooser.showOpenDialog(stage);
+        fileChooser.setTitle("Scegli Archivio");
+
+        String dir="";
+        String fileName="";
+        if (selectedFile != null) {
+            dir = selectedFile.toString();
+            fileName=selectedFile.getName();
+        }
+
+        String s=null;
+        boolean b=false;
+        int val=0;
+        try {
+            fileName=fileName.substring(0,fileName.lastIndexOf("h"));
+            URI u=new URI(fileName);
+            Object[] array=WindowsManager.apriArchivio(dir);
+            s=(String)array[0];
+            b=(boolean)array[1];
+            val=(int)array[2];
+        } catch (Exception e) {
+            System.out.println(e.getClass()==IOException.class);
+        }
+
+        System.out.println(s+"|"+b+"|"+val);
     }
 }

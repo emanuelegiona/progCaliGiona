@@ -244,7 +244,7 @@ public class DirectoryWindow {
 
         if (!dominioTxt.getText().equals("")){
             dominio = dominioTxt.getText();
-            if(!dominio.contains("http://")) dominio = "http://" + dominioTxt.getText();
+            //if(!dominio.contains("http://")) dominio = "http://" + dominioTxt.getText();
             try {
                 dom = new URI(dominio);
             } catch (URISyntaxException e) {
@@ -257,21 +257,17 @@ public class DirectoryWindow {
             if (Files.exists(Paths.get(directory))) path = Paths.get(directory);
         }
 
-
         VBox centerBox = (VBox) stage.getScene().getRoot().getChildrenUnmodifiable().get(1);
         HBox listaBox = (HBox) centerBox.getChildren().get(1);
         ListView listSeeds = (ListView) listaBox.getChildren().get(2);
         seeds = new ArrayList<>(listSeeds.getItems());
-
-
-
 
         try {
             siteCrawler = WebFactory.getSiteCrawler(dom, path);
             siteCrawler.addSeed(dom);
             for(Object seed: seeds){
                 String stringaSeed = (String) seed;
-                if (!stringaSeed.contains("http://")) stringaSeed = "https://" + stringaSeed;
+                //if (!stringaSeed.contains("http://")) stringaSeed = "https://" + stringaSeed;
                 URI uriSeed = new URI(stringaSeed);
                 siteCrawler.addSeed(uriSeed);
             }

@@ -12,6 +12,7 @@ import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 
+import java.net.URI;
 import java.net.URL;
 
 /**
@@ -21,7 +22,7 @@ public class WebWindow {
     private static Stage stage = new Stage();
 
 
-    public static void  showWebWindow(Stage primaryStage, URL url){
+    public static void  showWebWindow(Stage primaryStage, URI url){
 
         stage.setTitle("Browser");
         try{
@@ -36,12 +37,11 @@ public class WebWindow {
 
     }
 
-    private static Parent  createWebView(URL url){
+    private static Parent  createWebView(URI url){
         WebView wView = new WebView();
         WebEngine we = wView.getEngine();
         we.load("");
         we.load(url.toString());
-        wView.setDisable(true);
         TextField urlTxt = new TextField(url.toString());    // Per immettere l'URL delle pagine
         urlTxt.setPrefHeight(38);
         Image image= new Image(WindowsManager.class.getResourceAsStream("/rsz_refresh.png"));

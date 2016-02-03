@@ -22,7 +22,6 @@ public class Main extends Application {
     Stage stage;
     public static ObservableList<UriTableView> data = FXCollections.observableArrayList();
 
-
     public static void main(String[] args) {
         launch(args);
     }
@@ -84,11 +83,9 @@ public class Main extends Application {
 
         //colonne
         TableColumn links = new TableColumn("Links visitati");
-        //links.setPrefWidth(945);
         links.setPrefWidth(855);
         links.setCellValueFactory(
                 new PropertyValueFactory<UriTableView, URI>("uri"));
-
         links.setResizable(false);
 
         TableColumn stato = new TableColumn("Stato");
@@ -97,33 +94,25 @@ public class Main extends Application {
                 new PropertyValueFactory<UriTableView, String>("stato"));
 
         stato.setResizable(false);
-
+        //modifica
 
         griglia.setRowFactory(e -> {
             TableRow<UriTableView> row = new TableRow<>();
 
             row.setOnMouseClicked(g -> {
+                if (!row.isEmpty()) {
+                    URI uri = (URI)row.getItem().getUri();
+                    String statoUri = row.getItem().getStato();
+                    if (statoUri.equals("Completato") || statoUri.equals("  Fallito")) {
+                        if (spMain.getItems().size() == 1) {
+                            aggiungiSchedaSito(uri);
 
-
-                if (spMain.getItems().size() < 2) {
-                    final Pane st = new StackPane();
-                    st.setMinWidth(400);
-                    st.setMaxWidth(400);
-                    spMain.getItems().add(st);
-                    SchedaSito.showSchedaSito(spMain, stage);
-                    TableColumn tb = (TableColumn) griglia.getColumns().get(0);
-                    tb.setPrefWidth(450);
-
+                        } else {
+                            spMain.getItems().remove(spMain.getItems().get(1));
+                            aggiungiSchedaSito(uri);
+                        }
+                    }
                 }
-
-
-                /*if (row.getIndex() > 10)
-                    row.setStyle("-fx-background-color: #FFEBEB;" +
-                            "-fx-border-style: solid line-join round;" +
-                            "-fx-border-width: 0.1px");
-                else row.setStyle("-fx-background-color: #F2FFF2;" +
-                        "-fx-border-style: solid line-join round;" +
-                        "-fx-border-width: 0.1px");*/
 
 
             });
@@ -150,6 +139,16 @@ public class Main extends Application {
 
         return spMain;
 
+    }
+
+    private void aggiungiSchedaSito(URI uri){
+        final Pane st = new StackPane();
+        st.setMinWidth(400);
+        st.setMaxWidth(400);
+        spMain.getItems().add(st);
+        SchedaSito.showSchedaSito(spMain, stage, uri);
+        TableColumn tb = (TableColumn) griglia.getColumns().get(0);
+        tb.setPrefWidth(450);
     }
 
     /**

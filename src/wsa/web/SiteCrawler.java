@@ -13,12 +13,16 @@ public interface SiteCrawler {
      * @param dom  un URI
      * @return true se l'URI specificato è un dominio */
     static boolean checkDomain(URI dom) {
-        if(!dom.isAbsolute())
+        try {
+            if (!dom.isAbsolute())
+                return false;
+            if (!dom.getAuthority().equals(dom.getHost()))
+                return false;
+            if (dom.getQuery() != null || dom.getFragment() != null)
+                return false;
+        }catch(Exception e){
             return false;
-        if(!dom.getAuthority().equals(dom.getHost()))
-            return false;
-        if(dom.getQuery()!=null || dom.getFragment()!=null)
-            return false;
+        }
         return true;
     }
 

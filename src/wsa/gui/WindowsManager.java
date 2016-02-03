@@ -94,33 +94,24 @@ public class WindowsManager {
         return field;
     }
 
-    public static void salvaArchivio(URI dom, String dir, Object[] array){
+    public static void salvaArchivio(URI dom, String dir, Object[] array) throws IOException{
         FileOutputStream f;
-        try {
-            f = new FileOutputStream(dir);
-            ObjectOutputStream fOUT = new ObjectOutputStream(f);
+        f = new FileOutputStream(dir);
+        ObjectOutputStream fOUT = new ObjectOutputStream(f);
 
-            fOUT.writeObject(array);
+        fOUT.writeObject(array);
 
-            f.flush();
-            f.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        f.flush();
+        f.close();
     }
 
-    public static Object[] apriArchivio(String dir) throws IOException{
+    public static Object[] apriArchivio(String dir) throws IOException,ClassNotFoundException{
         Object[] res=null;
 
         FileInputStream f=new FileInputStream(dir);
         ObjectInputStream fIN=new ObjectInputStream(f);
 
-        try {
-            res=(Object[])fIN.readObject();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
+        res=(Object[])fIN.readObject();
         return res;
     }
 }
