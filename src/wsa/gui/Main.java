@@ -16,11 +16,14 @@ import javafx.stage.Stage;
 import src.wsa.web.SiteCrawler;
 
 import java.net.URI;
+import java.util.HashMap;
 
 
 public class Main extends Application {
     Stage stage;
     public static ObservableList<UriTableView> data = FXCollections.observableArrayList();
+    public static SiteCrawler siteCrawler;
+    public static HashMap<URI,Integer> occur;
 
     public static void main(String[] args) {
         launch(args);
@@ -28,20 +31,15 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-
-
         stage = primaryStage;
         stage.setTitle("Web Crawler");
         Scene sceneMenu = new Scene(finestra(), 950, 650);
-
 
         stage.setScene(sceneMenu);
         stage.setResizable(false);
 
         stage.show();
     }
-
-
 
     /** crea tutta la finestra
      *
@@ -51,7 +49,6 @@ public class Main extends Application {
         VBox vb = new VBox(bottoniPrincipali(), tableView());
         return vb;
     }
-
 
     /**
      *  pie di pagina
@@ -64,12 +61,8 @@ public class Main extends Application {
         bottom.setPadding(new Insets(8));
 
         return bottom;
-
-
     }
     SplitPane spMain = new SplitPane();
-
-
 
     public static TableView griglia;
     /**
@@ -78,8 +71,6 @@ public class Main extends Application {
      */
     private Parent tableView(){
         griglia = new TableView();
-
-
 
         //colonne
         TableColumn links = new TableColumn("Links visitati");
@@ -101,42 +92,28 @@ public class Main extends Application {
 
             row.setOnMouseClicked(g -> {
                 if (!row.isEmpty()) {
-                    URI uri = (URI)row.getItem().getUri();
+                    URI uri = row.getItem().getUri();
                     String statoUri = row.getItem().getStato();
                     if (statoUri.equals("Completato") || statoUri.equals("  Fallito")) {
                         if (spMain.getItems().size() == 1) {
                             aggiungiSchedaSito(uri);
-
                         } else {
                             spMain.getItems().remove(spMain.getItems().get(1));
                             aggiungiSchedaSito(uri);
                         }
                     }
                 }
-
-
             });
-
             return row;
         });
 
-
         SplitPane sp = new SplitPane();
-
-
-
         griglia.setItems(data);
-
         griglia.getColumns().addAll(links, stato);
-
         griglia.setPrefHeight(570);
         sp.getItems().add(griglia);
         sp.setOrientation(Orientation.VERTICAL);
         spMain.getItems().add(sp);
-
-
-
-
         return spMain;
 
     }
@@ -183,7 +160,7 @@ public class Main extends Application {
         StartBtn.setOnAction(e -> DirectoryWindow.showDirectoryWindow(stage));
 
         suspendBtn.setOnAction(e -> {
-            SiteCrawler siteCrawler = DirectoryWindow.getSiteCrawler();
+            siteCrawler = DirectoryWindow.getSiteCrawler();
             if(siteCrawler.isRunning()){
                 Image play = new Image(getClass().getResourceAsStream("/rsz_play.png"));
                 suspendBtn.setGraphic(new ImageView(play));
@@ -201,7 +178,7 @@ public class Main extends Application {
             suspendBtn.setDisable(true);
             stopBtn.setDisable(true);
             piu.setDisable(true);
-            SiteCrawler siteCrawler = DirectoryWindow.getSiteCrawler();
+            siteCrawler = DirectoryWindow.getSiteCrawler();
             siteCrawler.cancel();
             suspendBtn.setGraphic(new ImageView(pause));
         });
@@ -214,15 +191,10 @@ public class Main extends Application {
                 split.getItems().add(st);
                 Popup.showSeeds(spMain);
                 spMain.setPrefHeight(572);
-
             }else{
                 SplitPane splitPane = (SplitPane) spMain.getItems().get(0);
                 splitPane.getItems().remove(splitPane.getItems().get(1));
             }
-
-
-
-
         });
 
         return bottoni;

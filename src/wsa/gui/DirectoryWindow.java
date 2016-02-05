@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -35,6 +36,7 @@ public class DirectoryWindow {
     static Stage stage; //stage principale
     static ObservableList<String> listItems = FXCollections.observableArrayList(); //lista degli items nella listview
     static private SiteCrawler siteCrawler;
+    private static HashMap<URI,Integer> occur;
 
     /** Crea e mostra la finestra della directory
      * @param primaryStage lo stage della finestra principale*/
@@ -272,6 +274,7 @@ public class DirectoryWindow {
                 siteCrawler.addSeed(uriSeed);
             }
             siteCrawler.start();
+            occur=new HashMap<>();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (URISyntaxException e) {

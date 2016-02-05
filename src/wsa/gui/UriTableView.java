@@ -14,8 +14,8 @@ public class UriTableView {
         this.stato = new SimpleStringProperty(stato);
     }
 
-    public Object getUri() {
-        return uri.get();
+    public URI getUri() {
+        return (URI)uri.get();
     }
 
     public void setUri(String uri) {

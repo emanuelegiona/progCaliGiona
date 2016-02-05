@@ -24,6 +24,7 @@ public class MainOLD extends Application {
     static volatile Crawler c;
     static volatile SiteCrawler sc;
     static Parent root;
+    public static volatile HashMap<URI,Integer> occur;
 
     public static void main(String[] args) {
         launch(args);
@@ -39,9 +40,11 @@ public class MainOLD extends Application {
 
     private Parent createScene() {
         c=WebFactory.getCrawler(new HashSet<>(),new HashSet<>(),new HashSet<>(),null);
+        occur=new HashMap<>();
         try {
-            //sc=WebFactory.getSiteCrawler(new URI("http://www.google.it"),null);
-            sc=WebFactory.getSiteCrawler(new URI("http://twiki.di.uniroma1.it/pub/Metod_prog/RS_L14/lezione14.html"),null);
+            sc=WebFactory.getSiteCrawler(new URI("https://github.com/emanuelegiona/progCaliGiona"),null);
+            //sc=WebFactory.getSiteCrawler(new URI("https://www.python.org"),null);
+            //sc=WebFactory.getSiteCrawler(new URI("http://twiki.di.uniroma1.it/pub/Metod_prog/RS_L14/lezione14.html"),null);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (URISyntaxException e) {
@@ -52,7 +55,7 @@ public class MainOLD extends Application {
         Button async = new Button("AsyncLoader");
         Button crawlerStartbtn=new Button("Crawler start");
         Button crawlerSuspendbtn=new Button("Crawler suspend");
-        Button risultatobtn=new Button("estrai");
+        Button contaB=new Button("conta");
         Button sitecr=new Button("sitecrawler");
         Button salva=new Button("salva");
         Button apri=new Button("apri");
@@ -61,12 +64,12 @@ public class MainOLD extends Application {
         async.setOnAction(v -> asyncLoader());
         crawlerStartbtn.setOnAction(v -> crawlerStart());
         crawlerSuspendbtn.setOnAction(v->crawlerSuspend());
-        risultatobtn.setOnAction(v->risultato());
+        contaB.setOnAction(v->conta());
         sitecr.setOnAction(v -> scr());
         salva.setOnAction(v->salva());
         apri.setOnAction(v->apri());
 
-        VBox vb = new VBox(sitecr,salva,apri);
+        VBox vb = new VBox(sitecr,salva,apri,contaB);
         vb.setAlignment(Pos.CENTER);
         vb.setSpacing(30);
         return vb;
@@ -235,8 +238,50 @@ public class MainOLD extends Application {
     }
 
     public void scr(){
+        /*try {
+            URI u=new URI("file:///C:/Users/antonella/Desktop/Desktop/index.html");
+            System.out.println(SiteCrawler.checkDomain(u));
+            System.out.println("assoluto: "+u.isAbsolute());
+            System.out.println("authority: "+u.getAuthority());
+            System.out.println("host: "+u.getHost());
+            String s=u.getPath();
+            if(s!=null) {
+                System.out.println("path: " + s);
+                if (s.contains(".")) {
+                    System.out.println("contiene un punto");
+                    String s1 = s.substring(s.lastIndexOf(".") + 1);
+                    s1=s1.toLowerCase();
+                    if (s1.equals("htm") || s1.equals("html"))
+                        System.out.println("e' un link");
+                }
+                else {
+                    System.out.println("non ci sono punti");
+                }
+            }
+            else
+                System.out.println("path nullo");
+
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }*/
+
+        try {
+            sc.addSeed(new URI("https://github.com/emanuelegiona/progCaliGiona/tree/master/src/wsa"));
+            sc.addSeed(new URI("https://github.com/emanuelegiona/progCaliGiona/tree/master/resources"));
+            sc.addSeed(new URI("https://github.com/emanuelegiona/progCaliGiona/blob/master/resources/rsz_1delete.png"));
+            sc.addSeed(new URI("https://github.com/emanuelegiona/progCaliGiona/blob/master/resources/rsz_blu-.png"));
+        }catch(URISyntaxException e){}
         sc.start();
         new Thread(()->{
+            while(true)
+                System.out.println(sc.getToLoad().size());
+        }).start();
+        try {
+            sc.addSeed(new URI("https://github.com/emanuelegiona/progCaliGiona/blob/master/resources/rsz_refresh.png"));
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+        /*new Thread(()->{
             while(true) {
                 Optional<CrawlerResult> t = sc.get();
                 if (t.isPresent()) {
@@ -244,7 +289,7 @@ public class MainOLD extends Application {
                     System.out.println(cr.uri + " || " + cr.linkPage + "||" + (cr.links == null ? null : cr.links.size()) + " || " + cr.exc);
                 }
             }
-        }).start();
+        }).start();*/
     }
 
     public void salva(){
@@ -278,10 +323,14 @@ public class MainOLD extends Application {
 
         String dir="";
         String fileName="";
+        Path dir2=null;
         if (selectedFile != null) {
-            dir = selectedFile.toString();
+            dir2=selectedFile.toPath();
+            dir=selectedFile.toString();
             fileName=selectedFile.getName();
         }
+
+        System.out.println(dir2.getFileName().toString()+" | "+fileName);
 
         String s=null;
         boolean b=false;
@@ -298,5 +347,28 @@ public class MainOLD extends Application {
         }
 
         System.out.println(s+"|"+b+"|"+val);
+    }
+
+    public void conta(){
+        try {
+            //c.add(new URI("file:///C:/Users/antonella/Desktop/Desktop/index.html"));
+            c.add(new URI("https://www.python.org"));
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+        c.start();
+
+        new Thread(()->{
+            System.out.println("stampero' lo schifo");
+            while(true) {
+                try {
+                    Thread.currentThread().sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                occur.forEach((u,i)->{System.out.println(u+"("+i+")");});
+            }
+        }).start();
     }
 }

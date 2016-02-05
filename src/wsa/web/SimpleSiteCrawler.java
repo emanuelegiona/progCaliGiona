@@ -29,7 +29,7 @@ public class SimpleSiteCrawler implements SiteCrawler{
         this.dir=dir;
 
         savePath = this.dir + "\\" + dom.getAuthority()+"h"+LocalDateTime.now().toString().replace(":", "m").replace(".", "_") +".cg";
-        if(dom!=null && dir==null) {
+        if(dom!=null) {
             succDownload = new HashSet<>();
             toDownload = new HashSet<>();
             failDownload = new HashSet<>();
@@ -38,7 +38,8 @@ public class SimpleSiteCrawler implements SiteCrawler{
 
         if(dom==null && dir!=null){
             try{
-                open("INSERIRE IL FileName DA FileChooser");
+                String fileName=dir.getFileName().toString();
+                open(fileName);
             } catch (Exception e) {
                 if(e.getClass().equals(IOException.class))
                     throw new IOException(e.getMessage());
@@ -84,7 +85,6 @@ public class SimpleSiteCrawler implements SiteCrawler{
         if(isCancelled())
             throw new IllegalStateException();
 
-        addSeed(dom);
         if(!isRunning() && !toDownload.isEmpty()){
             crawler.start();
 
@@ -278,7 +278,9 @@ public class SimpleSiteCrawler implements SiteCrawler{
 
     private void save() throws Exception{
         if(dir!=null) {
-            Object[] array = {this.dom, succDownload, toDownload, failDownload, results};
+            Map<URI,CRSerializable> serial=new HashMap<>();
+            results.forEach((u,cr)->serial.put(u,new CRSerializable(cr)));
+            Object[] array = {this.dom, succDownload, toDownload, failDownload, serial};
             WindowsManager.salvaArchivio(this.dom, savePath, array);
         }
     }
@@ -292,6 +294,6 @@ public class SimpleSiteCrawler implements SiteCrawler{
         this.succDownload=(Set<URI>)array[1];
         this.toDownload=(Set<URI>)array[2];
         this.failDownload=(Set<URI>)array[3];
-        this.results=(HashMap<URI,CrawlerResult>)array[4];
+        ((HashMap<URI,CRSerializable>)array[4]).forEach((uri,cr)-> this.results.put(uri,new CrawlerResult(cr.u,cr.lp,cr.links,cr.err,cr.e)));
     }
 }

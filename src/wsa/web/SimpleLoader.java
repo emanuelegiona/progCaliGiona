@@ -16,6 +16,7 @@ public class SimpleLoader implements Loader{
     public SimpleLoader(){
         Platform.runLater(() -> {
             engine = new WebEngine();
+            engine.setJavaScriptEnabled(false);
             engine.getLoadWorker().stateProperty().addListener((o, ov, nv) -> {
                 if (nv == Worker.State.SUCCEEDED) {
                     if (engine.getDocument() != null) {

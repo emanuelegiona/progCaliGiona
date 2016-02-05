@@ -13,17 +13,33 @@ public interface SiteCrawler {
      * @param dom  un URI
      * @return true se l'URI specificato è un dominio */
     static boolean checkDomain(URI dom) {
-        try {
-            if (!dom.isAbsolute())
-                return false;
-            if (!dom.getAuthority().equals(dom.getHost()))
-                return false;
-            if (dom.getQuery() != null || dom.getFragment() != null)
-                return false;
-        }catch(Exception e){
+        boolean test1=true;
+        boolean test2=true;
+
+        if(!dom.isAbsolute())
             return false;
+
+        String s=dom.getPath();
+        if(s!=null) {
+            if (s.contains(".")) {
+                String s1 = s.substring(s.lastIndexOf(".") + 1);
+                s1 = s1.toLowerCase();
+                if(!s1.equals("htm") && !s1.equals("html"))
+                    test1=false;
+            }
         }
-        return true;
+
+        try {
+            if (!dom.getAuthority().equals(dom.getHost()))
+                test2 = false;
+
+            if (dom.getQuery()!=null || dom.getFragment()!=null)
+                test2 = false;
+        } catch (Exception e) {
+            test2=false;
+        }
+
+        return (test1||test2);
     }
 
     /** Controlla se l'URI seed appartiene al dominio dom. Si assume che dom

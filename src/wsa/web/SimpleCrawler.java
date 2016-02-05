@@ -1,6 +1,7 @@
 package src.wsa.web;
 
 import src.wsa.gui.Main;
+import src.wsa.gui.MainOLD;
 import src.wsa.gui.UriTableView;
 
 import java.io.UnsupportedEncodingException;
@@ -183,6 +184,7 @@ public class SimpleCrawler implements Crawler{
                                 try {
                                     URL testUrl = nUri.toURL();
                                     absLinks.add(nUri);
+                                    updateOccur(nUri);
                                 } catch (MalformedURLException e) {
                                     errLinks.add(s);
                                     /*if(failDownload.add(nUri)) {
@@ -224,6 +226,13 @@ public class SimpleCrawler implements Crawler{
         UriTableView utv = tableMap.get(u);
         utv.setStato(s);
         Main.data.set(Main.data.indexOf(utv),utv);
+    }
+
+    private void updateOccur(URI u){
+        if(MainOLD.occur.containsKey(u))
+            MainOLD.occur.put(u,MainOLD.occur.get(u)+1);
+        else
+            MainOLD.occur.put(u,1);
     }
 
     /**
