@@ -1,7 +1,11 @@
 package src.wsa.web;
+
 import java.net.URL;
 import java.util.concurrent.*;
 
+/**
+ * Created by daniele on 28/10/15.
+ */
 public class SimpleAsyncLoader implements AsyncLoader {
     private ConcurrentLinkedQueue<Loader> loaderPool;
     private ExecutorService pool;
@@ -9,7 +13,7 @@ public class SimpleAsyncLoader implements AsyncLoader {
     public SimpleAsyncLoader(){
         loaderPool = new ConcurrentLinkedQueue<>();
         int cpu=Runtime.getRuntime().availableProcessors();
-        for(int i=0;i<cpu;i++)
+        for(int i=0;i<=cpu;i++)
             loaderPool.add(WebFactory.getLoader());
         pool=Executors.newFixedThreadPool(cpu, tf -> {
             Thread t = new Thread(tf);

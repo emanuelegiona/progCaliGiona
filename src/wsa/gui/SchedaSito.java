@@ -2,21 +2,20 @@ package src.wsa.gui;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
 import javafx.scene.Parent;
-import javafx.scene.chart.Chart;
-import javafx.scene.chart.PieChart;
+import javafx.scene.chart.*;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.layout.*;
+import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import src.wsa.web.CrawlerResult;
 import src.wsa.web.SiteCrawler;
-import src.wsa.web.WebFactory;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
+import java.time.LocalDateTime;
 
 public class SchedaSito {
 
@@ -28,40 +27,80 @@ public class SchedaSito {
     public static void showSchedaSito(SplitPane sp, Stage primaryStage, URI uri){
         primaryWindow  = sp.getScene().getWindow();
         siteCrawler = DirectoryWindow.getSiteCrawler();
-        risultato = siteCrawler.get(uri);
+        if(siteCrawler == null) siteCrawler = MainGUI.getSiteCrawler();
+        if (siteCrawler.get(uri) != null){
+            risultato = siteCrawler.get(uri);
 
-        //modifica
-        BorderPane bp = new BorderPane();
-        Text x = new Text("X");
+            //modifica
+            BorderPane bp = new BorderPane();
+            Text statistiche = new Text("Statistiche sito");
+            Text x = new Text("X");
+            Pane p = new Pane();
+            HBox hb = new HBox(statistiche,p, x);
+
+            HBox.setHgrow(p, Priority.ALWAYS);
+
+            Tooltip.install(hb, new Tooltip("HBOX"));
 
 
-        HBox hb = new HBox(new Text("Statistiche sito                                                                                          "), x);
-        hb.setPrefWidth(200);
+            hb.setPrefWidth(200);
 
-        bp.setTop(new ToolBar(hb));
-        bp.setStyle("-fx-background-color: #FFFFFF");
 
-        StackPane st = (StackPane) sp.getItems().get(1);
-        st.getChildren().add(bp);
+            bp.setStyle("-fx-background-color: #FFFFFF");
 
+            StackPane st = (StackPane) sp.getItems().get(1);
+            st.getChildren().add(bp);
+
+
+            ToolBar toolBar = new ToolBar(statistiche,p,x);
+
+
+            bp.setTop(toolBar);
+            bp.setCenter(createSchedaWindow(risultato));
+            bp.setBottom(pie(primaryStage, risultato));
+
+
+            x.setOnMouseClicked(e -> {
+                SplitPane splitPane = (SplitPane) sp.getItems().get(0);
+                TableView table = (TableView) splitPane.getItems().get(0);
+                TableColumn links = (TableColumn) table.getColumns().get(0);
+                TableColumn tb = (TableColumn) table.getColumns().get(1);
+                //links.prefWidthProperty().bind(MainGUI.griglia.widthProperty().multiply(0.875));
+                //tb.prefWidthProperty().bind(MainGUI.griglia.widthProperty().multiply(0.125));
+                links.prefWidthProperty().bind(table.widthProperty().multiply(0.875));
+                tb.prefWidthProperty().bind(table.widthProperty().multiply(0.125));
+                sp.getItems().remove(sp.getItems().get(1));
+
+            });
+
+        }
+
+
+    }
+
+
+    private static HBox pie(Stage primaryStage, CrawlerResult risultato){
         Button apriSito = WindowsManager.createButton("Apri sito", 100,50,null,false);
-        bp.setCenter(createSchedaWindow(risultato));
-        bp.setBottom(apriSito);
+        apriSito.setOnAction(e -> WebWindow.showWebWindow(primaryStage, risultato.uri));
+
+        Button apriLinks = WindowsManager.createButton("Mostra Links", 100,50, null, false);
+        apriLinks.setOnAction(e -> {
+            if (risultato.links==null && risultato.errRawLinks == null){
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Informazione");
+                alert.setHeaderText(null);
+                alert.setContentText("\n       Non ci sono link da visualizzare");
+                alert.showAndWait();
+            }else{
+                Links.showLinksWindow(primaryStage, risultato);
+            }
 
 
-        apriSito.setOnAction(e -> {
-            WebWindow.showWebWindow(primaryStage, uri);
+
         });
 
+        return WindowsManager.createHBox(10,5,null,null,apriSito,apriLinks);
 
-        x.setOnMouseClicked(e -> {
-            SplitPane splitPane = (SplitPane) sp.getItems().get(0);
-            TableView table = (TableView) splitPane.getItems().get(0);
-            TableColumn tb = (TableColumn) table.getColumns().get(0);
-            tb.setPrefWidth(855);
-            sp.getItems().remove(sp.getItems().get(1));
-
-        });
     }
 
     private static Parent createSchedaWindow(CrawlerResult cr){
@@ -79,41 +118,81 @@ public class SchedaSito {
 
 
         Text uriLbl = new Text("Uri: " + indirizzoUri);
-
-        Text linksSizeLbl = new Text("Link scaricati: " + linksSize);
-        Text errSizeLbl = new Text("Link falliti: " + errSize);
-
-        String exc = "null";
-        if(e != null) exc = e.toString();
-        Text excLbl = new Text("Eccezione: " + exc);
+        uriLbl.setFont(Font.font(14));
+        final Tooltip tooltip = new Tooltip(cr.uri.toString());
+        Tooltip.install(uriLbl, tooltip);
 
         String appartenenza = "No";
         if (rule == true) appartenenza = "Si";
         Text ruleLbl = new Text("Appartiene al dominio: " + appartenenza);
+        ruleLbl.setFont(uriLbl.getFont());
 
-        return new VBox(uriLbl,linksSizeLbl,errSizeLbl, excLbl, ruleLbl, creaGrafico());
+        VBox vb = new VBox(uriLbl,ruleLbl);
+
+        Text linksSizeLbl = new Text("Link scaricati: " + linksSize);
+        linksSizeLbl.setFont(uriLbl.getFont());
+        Text errSizeLbl = new Text("Link falliti: " + errSize);
+        errSizeLbl.setFont(uriLbl.getFont());
+        if(appartenenza.equals("Si")){
+            vb.getChildren().addAll(linksSizeLbl,errSizeLbl);
+        }
+
+        String exc = "null";
+        if(e != null) exc = e.getMessage();
+        Text excLbl = new Text("Eccezione: " + exc);
+        excLbl.setFont(uriLbl.getFont());
+
+        if(!exc.equals("null")) vb.getChildren().add(excLbl);
+
+        Text conta1 = new Text("Numero link verso questa pagina: "+MainGUI.getStats().get(cr.uri)[0]);
+        conta1.setFont(uriLbl.getFont());
+        vb.getChildren().add(conta1);
+
+        Text conta2 = new Text("Numero link a pagine fuori dal dominio: "+MainGUI.getStats().get(cr.uri)[1]);
+        conta2.setFont(uriLbl.getFont());
+        vb.getChildren().add(conta2);
+
+        vb.getChildren().addAll(creaGrafico("Links totali"), creaGrafico("Links pagina"));
+
+        LocalDateTime t=LocalDateTime.now();
+        Text data=new Text("Ultimo aggiornamento: "+t.getDayOfMonth()+"/"+t.getMonth()+"/"+t.getYear()+" alle "+t.getHour()+":"+t.getMinute());
+        data.setFont(uriLbl.getFont());
+        vb.getChildren().add(data);
+
+        vb.setSpacing(5);
+        vb.setPadding(new Insets(5));
+
+        return vb;
     }
 
-    private static PieChart creaGrafico(){
+
+    private static PieChart creaGrafico(String title){
         ObservableList<PieChart.Data> pieChartData =
                 FXCollections.observableArrayList(
                         new PieChart.Data("Grapefruit", 13),
-                        new PieChart.Data("Oranges", 25),
-                        new PieChart.Data("Plums", 10),
-                        new PieChart.Data("Pears", 22),
-                        new PieChart.Data("Apples", 30));
+                        new PieChart.Data("Oranges", 25));
         final PieChart chart = new PieChart(pieChartData);
-        chart.setTitle("Statistiche");
+        chart.setTitle(title);
+        chart.setLabelLineLength(10);
+        chart.setLegendVisible(false);
+        chart.setPrefSize(300,300);
+
+
+
         return chart;
     }
 
+
+
     private static String ottimizzaUri(URI uri){
         String uriFinale = uri.toString();
-        if(uriFinale.length()>63){
-            uriFinale = uriFinale.substring(0,62) + "...";
+        if(uriFinale.length()>48){
+            uriFinale = uriFinale.substring(0,47) + "...";
         }
         return uriFinale;
     }
 
-
+    public static SiteCrawler getSiteCrawler() {
+        return siteCrawler;
+    }
 }

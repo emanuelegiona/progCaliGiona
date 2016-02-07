@@ -1,10 +1,12 @@
 package src.wsa.web;
 
+import java.io.Serializable;
 import java.net.URI;
 import java.util.List;
 
 /** Il risultato del tentativo di scaricare una pagina tramite un Crawler */
-public class CrawlerResult {
+
+public class CrawlerResult{
     /** L'URI della pagina o null. Se null, significa che la prossima pagina
      * non è ancora pronta. */
     public final URI uri;

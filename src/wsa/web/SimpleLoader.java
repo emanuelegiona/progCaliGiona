@@ -1,19 +1,27 @@
 package src.wsa.web;
 import javafx.application.Platform;
+
 import javafx.concurrent.Worker;
 import javafx.scene.web.WebEngine;
 import src.wsa.web.html.Parsing;
+
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.concurrent.CountDownLatch;
 
+
 public class SimpleLoader implements Loader{
+
     private volatile WebEngine engine;
     private volatile Exception ex;
-    private volatile Parsing parsed=null;
+    private volatile Parsing parsed;
     private volatile CountDownLatch latch;
 
+
+
     public SimpleLoader(){
+
+        //listner della WebEngine
         Platform.runLater(() -> {
             engine = new WebEngine();
             engine.setJavaScriptEnabled(false);
@@ -31,52 +39,64 @@ public class SimpleLoader implements Loader{
 
                 } else if (nv == Worker.State.FAILED) {
                     ex = new Exception("Errore durante il download");
+                    latch.countDown();
 
                 } else if (nv == Worker.State.CANCELLED) {
                     ex = new Exception("Download annullato");
+                    latch.countDown();
                 }
+
             });
         });
     }
 
+
+
+
     /**
-     * Ritorna il risultato del tentativo di scaricare la pagina specificata. È
-     * bloccante, finchè l'operazione non è conclusa non ritorna.
+     * Ritorna il risultato del tentativo di scaricare la pagina specificata. �
+     * bloccante, finch� l'operazione non � conclusa non ritorna.
      *
      * @param url l'URL di una pagina web
      * @return il risultato del tentativo di scaricare la pagina
      */
     @Override
     public LoadResult load(URL url) {
+
+        //caricamento di una pagina vuota con dovuta attesa
         latch=new CountDownLatch(1);
-        Platform.runLater(() -> {
-            engine.load("");
-        });
+        Platform.runLater(() -> engine.load(""));
+
         try {
             latch.await();
         } catch (InterruptedException e) {
-            ex=new Exception("Interrotto");
+            ex = new Exception("Interrotto");
         }
 
+
+        //caricamento pagina con url in input con dovuta attesa
         latch=new CountDownLatch(1);
-        Platform.runLater(() -> {
-            engine.load(url.toString());
-        });
+        Platform.runLater(() -> engine.load(url.toString()));
         try {
             latch.await();
         } catch (InterruptedException e) {
-            ex=new Exception("Interrotto");
+            ex = new Exception("Interrotto");
         }
+
+
+
 
         return new LoadResult(url, parsed, ex);
     }
 
+
+
     /**
-     * Ritorna null se l'URL è scaricabile senza errori, altrimenti ritorna
+     * Ritorna null se l'URL � scaricabile senza errori, altrimenti ritorna
      * un'eccezione che riporta l'errore.
      *
      * @param url un URL
-     * @return null se l'URL è scaricabile senza errori, altrimenti
+     * @return null se l'URL � scaricabile senza errori, altrimenti
      * l'eccezione
      */
     @Override

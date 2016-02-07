@@ -9,11 +9,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
-import javafx.scene.*;
 import src.wsa.web.SiteCrawler;
-
-import java.net.URI;
-import java.net.URISyntaxException;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -22,7 +18,7 @@ import java.net.URISyntaxException;
  * Created by User on 09/01/2016.
  */
 public class Popup  {
-    private static SiteCrawler siteCrawler=DirectoryWindow.getSiteCrawler();
+    private static SiteCrawler siteCrawler = MainGUI.getSiteCrawler();
 
     public static void showSeeds(SplitPane sp){
         Text addSeedLbl = new Text("Aggiungi seed");

@@ -2,7 +2,9 @@ package src.wsa.web.html;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
+/**
+ * Created by User on 23/05/2015.
+ */
 public class HTMLNode extends Parsed.Node {
     private List<HTMLNode> children = new ArrayList<>();
     HTMLNode(String t, Map<String, String> a, String c) {

@@ -70,13 +70,15 @@ public class WebFactory {
      * @throws IOException se accade un errore durante l'accesso all'archivio
      * del SiteCrawler
      * @return un SiteCrawler */
-    public static SiteCrawler getSiteCrawler(URI dom, Path dir) throws IllegalArgumentException,IOException {
+    public static SiteCrawler getSiteCrawler(URI dom, Path dir)
+            throws IOException {
         if(dom==null && dir==null)
             throw new IllegalArgumentException("ERRORE: sia il dominio che la directory di archiviazioni sono nulli.");
         if(dom!=null && !SiteCrawler.checkDomain(dom))
             throw new IllegalArgumentException("ERRORE: dominio non valido.");
-        if(dom!=null && dir!=null && (!Files.isDirectory(dir) || !Files.isRegularFile(dir)))
-            throw new IllegalArgumentException("ERRORE: directory non valida.");
+        if(dom!=null && dir!=null)
+            if (!Files.isDirectory(dir) && !Files.isRegularFile(dir))
+                throw new IllegalArgumentException("ERRORE: directory non valida.");
 
         return new SimpleSiteCrawler(dom,dir);
     }

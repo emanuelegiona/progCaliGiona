@@ -94,6 +94,7 @@ public class WindowsManager {
         return field;
     }
 
+
     public static void salvaArchivio(URI dom, String dir, Object[] array) throws IOException{
         FileOutputStream f;
         f = new FileOutputStream(dir);
@@ -114,4 +115,15 @@ public class WindowsManager {
         res=(Object[])fIN.readObject();
         return res;
     }
+
+    public static Alert creaAlert(Alert.AlertType at,String titolo, String testo ){
+        Alert alert = new Alert(at);
+        alert.setTitle(titolo);
+        alert.setContentText(testo);
+        alert.setHeaderText(null);
+        return alert;
+
+    }
+
+
 }

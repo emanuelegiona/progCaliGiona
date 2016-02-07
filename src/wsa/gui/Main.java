@@ -1,29 +1,24 @@
 package src.wsa.gui;
-
 import javafx.application.Application;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
-import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.layout.*;
+import javafx.scene.control.Button;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import src.wsa.web.SiteCrawler;
+import src.wsa.web.*;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
-import java.util.HashMap;
-
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class Main extends Application {
-    Stage stage;
-    public static ObservableList<UriTableView> data = FXCollections.observableArrayList();
-    public static SiteCrawler siteCrawler;
-    public static HashMap<URI,Integer> occur;
+    static volatile Crawler c;
 
     public static void main(String[] args) {
         launch(args);
@@ -31,173 +26,158 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        stage = primaryStage;
-        stage.setTitle("Web Crawler");
-        Scene sceneMenu = new Scene(finestra(), 950, 650);
-
-        stage.setScene(sceneMenu);
-        stage.setResizable(false);
-
-        stage.show();
+        Parent root = createScene();
+        Scene scene = new Scene(root, 400, 400);
+        primaryStage.setScene(scene);
+        primaryStage.show();
     }
 
-    /** crea tutta la finestra
-     *
-     * @return il layout della finestra
-     */
-    private Parent finestra(){
-        VBox vb = new VBox(bottoniPrincipali(), tableView());
+    private Parent createScene(){
+        c=WebFactory.getCrawler(new HashSet<>(),new HashSet<>(),new HashSet<>(),null);
+        Text txt = new Text("This is a text");
+        Button loader = new Button("Loader");
+        Button async = new Button("AsyncLoader");
+        Button crawlerStartbtn=new Button("Crawler start");
+        Button crawlerSuspendbtn=new Button("Crawler suspend");
+        Button risultatobtn=new Button("estrai");
+        Button siteCrawler = new Button("dominio");
+        Button test = new Button("test");
+
+        loader.setOnAction(v -> loaderSimple());
+        async.setOnAction(v -> asyncLoader());
+        crawlerStartbtn.setOnAction(v -> crawlerStart());
+        crawlerSuspendbtn.setOnAction(v->crawlerSuspend());
+        risultatobtn.setOnAction(v->risultato());
+        siteCrawler.setOnAction(v -> {
+            try {
+                siteCrawler();
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        test.setOnAction(e -> {
+            System.out.println(Thread.activeCount());
+        });
+
+        VBox vb = new VBox(txt, loader, async, crawlerStartbtn, crawlerSuspendbtn, test,risultatobtn, siteCrawler);
+        vb.setAlignment(Pos.CENTER);
+        vb.setSpacing(30);
         return vb;
     }
 
-    /**
-     *  pie di pagina
-     * @return il pie di pagina con la firma
-     */
-    private Parent pie(){
-        Label firma = new Label("   Realizzato da Cali Daniele e Giona Emanuele.");
-
-        HBox bottom = new HBox(firma);
-        bottom.setPadding(new Insets(8));
-
-        return bottom;
+    private void siteCrawler() throws URISyntaxException, IOException {
+        //SiteCrawler site = WebFactory.getSiteCrawler(new URI("https://www.google.it/"), null);
+        System.out.println(SiteCrawler.checkDomain(new URI("https://www.youtube.com/watch?v=vtocSMxzEdM")));
+        System.out.println(SiteCrawler.checkSeed(new URI("https://www.google.it/"), new URI("https://www.google.it/doodles")));
     }
-    SplitPane spMain = new SplitPane();
 
-    public static TableView griglia;
-    /**
-     *  creazione della tableview
-     * @return
-     */
-    private Parent tableView(){
-        griglia = new TableView();
+    public static void loaderSimple(){
+        SimpleLoader simpleLoader = new SimpleLoader();
+        URL[] url=new URL[1];
+        try {
+            url[0]=new URL("file:///C:/Users/User/Desktop/hw3_files/testAsync/pages/object.html");
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        new Thread(()-> {
+            long t=System.currentTimeMillis();
+            LoadResult r = simpleLoader.load(url[0]);
+            System.out.println(r.url+"|"+r.parsed.getLinks().size());
+            System.out.println("Tempo: "+(System.currentTimeMillis()-t));
+        }).start();
+    }
 
-        //colonne
-        TableColumn links = new TableColumn("Links visitati");
-        links.setPrefWidth(855);
-        links.setCellValueFactory(
-                new PropertyValueFactory<UriTableView, URI>("uri"));
-        links.setResizable(false);
+    public static void asyncLoader(){
 
-        TableColumn stato = new TableColumn("Stato");
-        stato.setPrefWidth(90);
-        stato.setCellValueFactory(
-                new PropertyValueFactory<UriTableView, String>("stato"));
 
-        stato.setResizable(false);
-        //modifica
 
-        griglia.setRowFactory(e -> {
-            TableRow<UriTableView> row = new TableRow<>();
+        new Thread(()-> {
+            AsyncLoader al = WebFactory.getAsyncLoader();
+            List<Future<LoadResult>> list = new ArrayList<>();
 
-            row.setOnMouseClicked(g -> {
-                if (!row.isEmpty()) {
-                    URI uri = row.getItem().getUri();
-                    String statoUri = row.getItem().getStato();
-                    if (statoUri.equals("Completato") || statoUri.equals("  Fallito")) {
-                        if (spMain.getItems().size() == 1) {
-                            aggiungiSchedaSito(uri);
-                        } else {
-                            spMain.getItems().remove(spMain.getItems().get(1));
-                            aggiungiSchedaSito(uri);
-                        }
-                    }
+            try {
+
+                URL url1 = new URL("file:///C:/Users/User/Desktop/hw3_files/testAsync/pages/di.html");
+                URL url2 = new URL("file:///C:/Users/User/Desktop/hw3_files/testAsync/pages/di2.html");
+                URL url3 = new URL("file:///C:/Users/User/Desktop/hw3_files/testAsync/pages/lezione01.html");
+                URL url4 = new URL("file:///C:/Users/User/Desktop/hw3_files/testAsync/pages/lezione14.html");
+                URL url5 = new URL("file:///C:/Users/User/Desktop/hw3_files/testAsync/pages/object.html");
+
+
+                URL[] urls = {url1,url2,url3,url4,url5};
+                //URL[] urls = {url1, url3};
+                for (int i = 0; i < urls.length; i++) {
+                    list.add(al.submit(urls[i]));
+                    System.out.println("Aggiunto: " + urls[i]);
                 }
-            });
-            return row;
-        });
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
 
-        SplitPane sp = new SplitPane();
-        griglia.setItems(data);
-        griglia.getColumns().addAll(links, stato);
-        griglia.setPrefHeight(570);
-        sp.getItems().add(griglia);
-        sp.setOrientation(Orientation.VERTICAL);
-        spMain.getItems().add(sp);
-        return spMain;
+            try {
+
+                for (Future<LoadResult> l : list) {
+                    System.out.println("output: " + l.get().url + "|" + l.get().parsed.getLinks().size());
+                }
+            } catch (Exception e) {
+                System.out.println(e.toString());
+            }
+        }).start();
 
     }
 
-    private void aggiungiSchedaSito(URI uri){
-        final Pane st = new StackPane();
-        st.setMinWidth(400);
-        st.setMaxWidth(400);
-        spMain.getItems().add(st);
-        SchedaSito.showSchedaSito(spMain, stage, uri);
-        TableColumn tb = (TableColumn) griglia.getColumns().get(0);
-        tb.setPrefWidth(450);
+    public static void crawlerStart(){
+        new Thread(()-> {
+            try {
+                c.add(new URI("http://www.google.it"));
+                c.add(new URI("https://github.com/emanuelegiona/wsa/blob/master/web/SimpleAsyncLoader.java"));
+                c.add(new URI("https://www.facebook.com/"));
+                c.add(new URI("http://pellacini.di.uniroma1.it/teaching/fondamenti14/"));
+                c.add(new URI("http://twiki.di.uniroma1.it/pub/Metod_prog/RS_INFO/info.html"));
+                c.add(new URI("https://python.org"));
+                c.add(new URI("http://youtube.com"));
+
+                System.out.println("Tento di aggiungere il link");
+                c.add(new URI("http://google.it"));
+                c.add(new URI("htpp:goodle.o"));
+                c.start();
+
+                /*
+                System.out.println("------------------------");
+                System.out.println("Scaricati:");
+                c.getLoaded().forEach(System.out::println);
+                System.out.println("------------------------");
+                System.out.println("Da scaricare:");
+                c.getToLoad().forEach(System.out::println);
+                System.out.println("------------------------");
+                System.out.println("Errori:");
+                c.getErrors().forEach(System.out::println);
+                System.out.println("------------------------");
+                */
+
+                System.out.println("ready");
+
+                //System.out.println("Tento di aggiungere il link");
+                //c.add(new URI("http://google.it"));
+
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
-    /**
-     *  controlli principali per far partire il crawler
-     */
-    private Parent bottoniPrincipali(){
+    public void risultato(){
+        Optional<CrawlerResult> res;
+        res = c.get();
+        if(res.isPresent()) {
+            CrawlerResult cr = res.get();
+            System.out.println(cr.uri + " || " + (cr.links==null?null:cr.links.size()) + " || " + cr.exc);
+        }
+    }
 
-        //bottone start
-        Image down = new Image(getClass().getResourceAsStream("/rsz_down.png"));
-        Button StartBtn = WindowsManager.createButton(null, 40, 40, down, false);
-
-
-        //bottone pausa
-        Image pause = new Image(getClass().getResourceAsStream("/rsz_1pause.png"));
-        Button suspendBtn = WindowsManager.createButton(null, 40, 40, pause, true);
-
-
-        //bottone stop
-        Image stop = new Image(getClass().getResourceAsStream("/rsz_1delete.png"));
-        Button stopBtn = WindowsManager.createButton(null, 40, 40, stop, true);
-
-        //bottone +
-        Image plus = new Image(getClass().getResourceAsStream("/rsz_blu-.png"));
-        ToggleButton piu = new ToggleButton();
-        piu.setGraphic(new ImageView(plus));
-        piu.setDisable(true);
-
-        HBox bottoni = WindowsManager.createHBox(3, 3, null, null, StartBtn, suspendBtn, stopBtn, piu);
-
-
-        //listner
-        StartBtn.setOnAction(e -> DirectoryWindow.showDirectoryWindow(stage));
-
-        suspendBtn.setOnAction(e -> {
-            siteCrawler = DirectoryWindow.getSiteCrawler();
-            if(siteCrawler.isRunning()){
-                Image play = new Image(getClass().getResourceAsStream("/rsz_play.png"));
-                suspendBtn.setGraphic(new ImageView(play));
-                siteCrawler.suspend();
-            }
-            else {
-                suspendBtn.setGraphic(new ImageView(pause));
-                siteCrawler.start();
-            }
-
-        });
-
-        stopBtn.setOnAction(e -> {
-            StartBtn.setDisable(false);
-            suspendBtn.setDisable(true);
-            stopBtn.setDisable(true);
-            piu.setDisable(true);
-            siteCrawler = DirectoryWindow.getSiteCrawler();
-            siteCrawler.cancel();
-            suspendBtn.setGraphic(new ImageView(pause));
-        });
-
-        piu.setOnAction(e -> {
-            if(piu.isSelected()){
-                final Pane st = new StackPane();
-                st.setPrefHeight(100);
-                SplitPane split = (SplitPane) spMain.getItems().get(0);
-                split.getItems().add(st);
-                Popup.showSeeds(spMain);
-                spMain.setPrefHeight(572);
-            }else{
-                SplitPane splitPane = (SplitPane) spMain.getItems().get(0);
-                splitPane.getItems().remove(splitPane.getItems().get(1));
-            }
-        });
-
-        return bottoni;
-
+    public void crawlerSuspend(){
+        c.suspend();
     }
 }

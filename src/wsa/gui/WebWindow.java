@@ -13,7 +13,6 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 
 import java.net.URI;
-import java.net.URL;
 
 /**
  * Created by User on 11/01/2016.
@@ -33,6 +32,7 @@ public class WebWindow {
         Scene finestra = new Scene(createWebView(url), 1400, 800);
 
         stage.setScene(finestra);
+        stage.setMaximized(true);
         stage.show();
 
     }

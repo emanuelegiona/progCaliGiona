@@ -49,7 +49,7 @@ public interface SiteCrawler {
      * @param seed  un URI
      * @return true se seed appartiene al dominio dom */
     static boolean checkSeed(URI dom, URI seed) {
-        return (dom.equals(seed) || !(dom.relativize(seed).equals(seed)));
+        return ( dom.equals(seed) || !dom.relativize(seed).equals(seed));
     }
 
     /** Aggiunge un seed URI. Se però è presente tra quelli già scaricati,

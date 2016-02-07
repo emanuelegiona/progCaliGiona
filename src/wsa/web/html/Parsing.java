@@ -2,12 +2,15 @@ package src.wsa.web.html;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-
+/**
+ * Created by User on 21/05/2015.
+ */
 public class Parsing implements Parsed {
     private HTMLNode ParsedTree;
     private Map<String, String> attributes = new HashMap<>();
@@ -23,7 +26,9 @@ public class Parsing implements Parsed {
                 firstRoot = nodelist.item(i);
             }
         }
+
         ParsedTree = parse(firstRoot);
+        attributes = null;
     }
     /** Fa il parsing della pagina settando i figli di ogni nodo e gli attributi
      *
@@ -34,8 +39,9 @@ public class Parsing implements Parsed {
         NodeList nodelist = node.getChildNodes();
         NamedNodeMap nodemap = node.getAttributes();
         HTMLNode root = new HTMLNode(node.getNodeName(), getAttributes(nodemap), node.getNodeValue());
+        org.w3c.dom.Node v;
         for (int i=0; i< nodelist.getLength(); i++){
-            org.w3c.dom.Node v = nodelist.item(i);
+            v = nodelist.item(i);
             root.addChildren(new HTMLNode(v.getNodeName(), getAttributes(v.getAttributes()), v.getNodeValue()));
             list.add(parse(v));
         }
@@ -47,24 +53,18 @@ public class Parsing implements Parsed {
      * @param nodeMap l'oggetto nodemap da lavorare
      * @return Una Mappa con i valori all'interno della nodemap in input
      */
-    private Map<String, String> getAttributes(NamedNodeMap nodeMap){
+    Map<String, String> getAttributes(NamedNodeMap nodeMap){
         Map<String, String> attr = new HashMap<>();
         if (nodeMap != null) {
             for (int i = 0; i < nodeMap.getLength(); i++) {
                 org.w3c.dom.Node n = nodeMap.item(i);
                 attr.put(n.getNodeName(), n.getNodeValue());
             }
-            setAttr(attr);
+            this.attributes = attr;
         }
-        return attr;
+        return attributes;
     }
-    /** Setta la variabile globale degli attributi con la mappa passata in input
-     *
-     * @param attr La mappa di attributi da settare
-     */
-    private void setAttr(Map<String, String> attr){
-        this.attributes = attr;
-    }
+
     @Override
     public void visit(Consumer<Node> visitor) {
         trueVisit(visitor, ParsedTree);
@@ -110,4 +110,6 @@ public class Parsing implements Parsed {
         visit(consumer);
         return StringsByTag;
     }
+
+
 }

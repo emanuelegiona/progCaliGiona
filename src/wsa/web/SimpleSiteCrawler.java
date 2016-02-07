@@ -1,7 +1,8 @@
 package src.wsa.web;
 
+import src.wsa.gui.MainGUI;
+import src.wsa.gui.UriTableView;
 import src.wsa.gui.WindowsManager;
-
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -17,19 +18,19 @@ public class SimpleSiteCrawler implements SiteCrawler{
     private volatile Set<URI> failDownload;
     private final Crawler crawler;
     private final Predicate<URI> pageLink;
-    private volatile HashMap<URI,CrawlerResult> results;
     private String savePath;
     private Thread crawlingThread;
+    private volatile Map<URI, CrawlerResult> results;
 
-    //TODO: aggiungere merda alla tableview con:
-    //Platform.runLater(() -> Main.data.add(new UriTableView(uri)));
+    private int ID;
 
     public SimpleSiteCrawler(URI dom, Path dir) throws IllegalArgumentException,IOException{
         this.dom=dom;
         this.dir=dir;
 
-        savePath = this.dir + "\\" + dom.getAuthority()+"h"+LocalDateTime.now().toString().replace(":", "m").replace(".", "_") +".cg";
+
         if(dom!=null) {
+            savePath = this.dir + "\\" + dom.getAuthority()+"h"+LocalDateTime.now().toString().replace(":", "m").replace(".", "_") +".cg";
             succDownload = new HashSet<>();
             toDownload = new HashSet<>();
             failDownload = new HashSet<>();
@@ -40,6 +41,7 @@ public class SimpleSiteCrawler implements SiteCrawler{
             try{
                 String fileName=dir.getFileName().toString();
                 open(fileName);
+                savePath = this.dir.toString();
             } catch (Exception e) {
                 if(e.getClass().equals(IOException.class))
                     throw new IOException(e.getMessage());
@@ -50,6 +52,9 @@ public class SimpleSiteCrawler implements SiteCrawler{
 
         pageLink=(URI u)->SiteCrawler.checkSeed(this.dom,u);
         crawler=WebFactory.getCrawler(succDownload,toDownload,failDownload,pageLink);
+
+        ID=MainGUI.ID;
+        MainGUI.crID.put(crawler,ID);
     }
 
     /**
@@ -98,9 +103,8 @@ public class SimpleSiteCrawler implements SiteCrawler{
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    //System.out.println(toDownload.size()+"||"+succDownload.size()+"||"+failDownload.size());
                 }
-            }, /*5000*/ /**/60000/**/, /*5000*/ /**/60000/**/);
+            }, 5000 /**//*60000/**/, /*5000*/ /**/60000/**/);
 
             crawlingThread=new Thread(()->{
                 while(true){
@@ -119,15 +123,16 @@ public class SimpleSiteCrawler implements SiteCrawler{
                         break;
                     }
 
-                    if(Math.abs(this.toDownload.size()+this.succDownload.size()+this.failDownload.size())-
-                    (crawler.getToLoad().size()+crawler.getLoaded().size()+crawler.getErrors().size())>30)
-                        update();
+                   /****************************** if(Math.abs(this.toDownload.size()+this.succDownload.size()+this.failDownload.size())-
+                            (crawler.getToLoad().size()+crawler.getLoaded().size()+crawler.getErrors().size())>30)
+                        update();*****************************************/
                 }
             });
             crawlingThread.setDaemon(true);
             crawlingThread.start();
         }
     }
+
 
     /**
      * Sospende l'esecuzione del SiteCrawler. Se non è in esecuzione, ignora
@@ -146,11 +151,8 @@ public class SimpleSiteCrawler implements SiteCrawler{
             crawler.suspend();
             crawlingThread.interrupt();
 
-            update();
-            try {
-                save();
-            } catch (Exception e) {
-                e.printStackTrace();
+            if(dir!=null){
+                update();
             }
         }
     }
@@ -164,10 +166,6 @@ public class SimpleSiteCrawler implements SiteCrawler{
     public void cancel() {
         suspend();
         crawler.cancel();
-        toDownload=null;
-        succDownload=null;
-        failDownload=null;
-        results=null;
     }
 
     /**
@@ -182,8 +180,11 @@ public class SimpleSiteCrawler implements SiteCrawler{
     public Optional<CrawlerResult> get() throws IllegalStateException{
         if(isCancelled())
             throw new IllegalStateException();
+
         return crawler.get();
     }
+
+    //modifica
 
     /**
      * Ritorna il risultato del tentativo di scaricare la pagina che
@@ -201,10 +202,14 @@ public class SimpleSiteCrawler implements SiteCrawler{
             throw new IllegalStateException();
 
         update();
+
         if(!succDownload.contains(uri) && !failDownload.contains(uri))
             throw new IllegalArgumentException();
 
+
+
         return results.get(uri);
+
     }
 
     /**
@@ -274,13 +279,15 @@ public class SimpleSiteCrawler implements SiteCrawler{
         succDownload=crawler.getLoaded();
         toDownload=crawler.getToLoad();
         failDownload=crawler.getErrors();
+
     }
 
     private void save() throws Exception{
         if(dir!=null) {
             Map<URI,CRSerializable> serial=new HashMap<>();
             results.forEach((u,cr)->serial.put(u,new CRSerializable(cr)));
-            Object[] array = {this.dom, succDownload, toDownload, failDownload, serial};
+            Map<URI,Integer[]> stats=MainGUI.getStats(identify());
+            Object[] array = {this.dom, succDownload,toDownload, failDownload, serial, stats};
             WindowsManager.salvaArchivio(this.dom, savePath, array);
         }
     }
@@ -291,9 +298,26 @@ public class SimpleSiteCrawler implements SiteCrawler{
         Object[] array=WindowsManager.apriArchivio(dir.toString());
 
         this.dom=(URI)array[0];
+        Object[] objects=MainGUI.activeCrawlers.get(identify());
+        objects[4]=this.dom;
+        MainGUI.activeCrawlers.put(identify(),objects);
+
         this.succDownload=(Set<URI>)array[1];
         this.toDownload=(Set<URI>)array[2];
         this.failDownload=(Set<URI>)array[3];
+        this.results = new HashMap<>();
         ((HashMap<URI,CRSerializable>)array[4]).forEach((uri,cr)-> this.results.put(uri,new CrawlerResult(cr.u,cr.lp,cr.links,cr.err,cr.e)));
+        results.forEach((uri, cr) -> MainGUI.getData(identify()).add(new UriTableView(uri, (cr.exc==null?"Completato":"  Fallito"))));
+        /*Map<URI,Integer[]> stats=(HashMap<URI,Integer[]>)array[5];
+        Object[] objects=new Object[4];
+        objects[3]=stats;
+        MainGUI.activeCrawlers.put(identify(),objects);*/
+    }
+
+    private int identify(){
+        for(int i:MainGUI.activeCrawlers.keySet())
+            if(MainGUI.getSiteCrawler(i).equals(this))
+                return i;
+        return 0;
     }
 }
