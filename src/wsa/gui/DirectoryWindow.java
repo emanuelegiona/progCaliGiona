@@ -8,6 +8,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -31,9 +32,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-/**
- * Created by User on 07/01/2016.
- */
 public class DirectoryWindow {
     static Stage stage; //stage principale
     static ObservableList<String> listItems = FXCollections.observableArrayList(); //lista degli items nella listview
@@ -270,9 +268,6 @@ public class DirectoryWindow {
         ListView listSeeds = (ListView) listaBox.getChildren().get(2);
         seeds = new ArrayList<>(listSeeds.getItems());
 
-
-        //TODO: controllare apertura da file (forma dell'archivio)
-
         try {
             MainGUI.ID++;
             dom = new URI(dominio);
@@ -280,7 +275,8 @@ public class DirectoryWindow {
             final URI finalDom = dom;
             Platform.runLater(() -> {
                 Object[] objects = new Object[5];
-                Tab tab = new Tab("Tab");
+                Tab tab = new Tab("In Download");
+                tab.setTooltip(new Tooltip(finalDom.toString()));
                 ObservableList<UriTableView> fx = FXCollections.observableArrayList();
                 objects[0] = siteCrawler;
                 objects[1] = fx;
@@ -306,13 +302,18 @@ public class DirectoryWindow {
                         String stringaSeed = (String) seed;
                         try {
                             uriSeed = new URI(stringaSeed);
-                        } catch (URISyntaxException e) {
-                            //e.printStackTrace();
-                        }
+                        } catch (URISyntaxException e) {}
                         siteCrawler.addSeed(uriSeed);
                     }
                 }
                 siteCrawler.start();
+
+                Image pause = new Image(MainGUI.class.getResourceAsStream("/rsz_1pause.png"));
+                MainGUI.suspendBtn.setGraphic(new ImageView(pause));
+                MainGUI.suspendBtn.setDisable(false);
+                MainGUI.stopBtn.setDisable(false);
+                MainGUI.piu.setDisable(false);
+                MainGUI.grafico.setDisable(false);
             });
 
         } catch (IOException | URISyntaxException | IllegalArgumentException e) {
@@ -327,9 +328,8 @@ public class DirectoryWindow {
         Platform.runLater(() -> {
             stage.close();
             HBox a = (HBox)primaryStage.getScene().getRoot().getChildrenUnmodifiable().get(0);
-            a.getChildren().get(0).setDisable(true);
-            //a.getChildren().get(1).setDisable(true);
-            for(int i=2; i<=4; i++){
+
+            for(int i=2; i<=5; i++){
                 a.getChildren().get(i).setDisable(false);
             }
         });

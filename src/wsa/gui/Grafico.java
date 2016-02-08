@@ -8,23 +8,17 @@ import javafx.scene.Scene;
 import javafx.scene.chart.PieChart;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import src.wsa.web.SiteCrawler;
-
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Created by User on 06/02/2016.
- */
 public class Grafico {
-
-
     private static Stage stage = new Stage();
-
 
     public static void  showGraphic(Stage primaryStage, int ID){
         stage.setTitle("Grafico");
@@ -34,86 +28,52 @@ public class Grafico {
             stage.setAlwaysOnTop(false);
         }catch (Exception e){}
 
-        Scene finestra = new Scene(createGraphic(ID, 0), 500, 500);
+        Scene finestra = new Scene(createGraphic(ID), 500, 500);
 
         stage.setScene(finestra);
         stage.show();
+        stage.setMinHeight(500);
+        stage.setMinWidth(500);
     }
 
-    private static Parent createGraphic(int ID, int numeroSeeds){
+    private static Parent createGraphic(int ID){
         Object[] objects=MainGUI.activeCrawlers.get(ID);
 
-        HashMap<URI,Integer[]> stats=(HashMap<URI,Integer[]>)objects[3];
-        final int[] in={0,0,0,0,0};
-        final int[] out={0,0,0,0,0};
+        ConcurrentHashMap<URI,Integer[]> stats=new ConcurrentHashMap((HashMap < URI, Integer[]>)objects[3]);
+        HashMap<String,Integer> inData=new HashMap<>();
+        HashMap<String,Integer> outData=new HashMap<>();
+
+        for(int i=1;i<=10;i++){
+            inData.put(("<"+(5*i)),0);
+            outData.put(("<"+(5*i)),0);
+        }
+        inData.put("50+",0);
+        outData.put("50+",0);
+
         stats.forEach((u,i)->{
             int val=i[0];
-            if(val<5)
-                in[0]++;
-            else if(val<10)
-                in[1]++;
-            else if(val<25)
-                in[2]++;
-            else if(val<50)
-                in[3]++;
-            else
-                in[4]++;
+            for(int j=1;j<=10;j++){
+                if(val<(5*j)){
+                    inData.put(("<"+(5*j)),inData.get(("<"+(5*j)))+1);
+                    break;
+                }
+            }
+            if(val>=50)
+                inData.put("50+",inData.get("50+")+1);
 
             val=i[1];
-            if(val<5)
-                out[0]++;
-            else if(val<10)
-                out[1]++;
-            else if(val<25)
-                out[2]++;
-            else if(val<50)
-                out[3]++;
-            else
-                out[4]++;
+            for(int j=1;j<=10;j++){
+                if(val<(5*j)){
+                    outData.put(("<"+(5*j)),outData.get(("<"+(5*j)))+1);
+                    break;
+                }
+            }
+            if(val>=50)
+                outData.put("50+",outData.get("50+")+1);
         });
 
-        for(int i=0;i<in.length;i++){
-            System.out.println(i+": "+in[i]);
-        }
-
-        HashMap<String,Integer> inData=new HashMap<>();
-        for(int i=0;i<in.length;i++){
-            String s="";
-            switch (i){
-                case 0: s="<5";
-                    break;
-                case 1: s="<10";
-                    break;
-                case 2: s="<25";
-                    break;
-                case 3: s="<50";
-                    break;
-                case 4: s=">=50";
-                    break;
-            }
-            inData.put(s,i);
-        }
-        HashMap<String,Integer> outData=new HashMap<>();
-        for(int i=0;i<out.length;i++){
-            String s="";
-            switch (i){
-                case 0: s="<5";
-                    break;
-                case 1: s="<10";
-                    break;
-                case 2: s="<25";
-                    break;
-                case 3: s="<50";
-                    break;
-                case 4: s=">=50";
-                    break;
-            }
-            outData.put(s,i);
-        }
-
-
         Text titolo = new Text("Dominio: " + objects[4]);
-        Text nSeeds = new Text("Numero seeds iniziali: " + numeroSeeds);
+        titolo.setFont(Font.font(14));
 
         HBox grafici = WindowsManager.createHBox(20,0,
                 Pos.CENTER,
@@ -122,20 +82,31 @@ public class Grafico {
                 creaGrafico("Link Uscenti",outData));
 
         LocalDateTime t=LocalDateTime.now();
-        Text data=new Text("Ultimo aggiornamento: "+t.getDayOfMonth()+"/"+t.getMonth()+"/"+t.getYear()+" alle "+t.getHour()+":"+t.getMinute());
-        return new VBox(titolo, nSeeds, grafici,data);
+        Text data=new Text("Ultimo aggiornamento: "+
+                (t.getDayOfMonth()<10?"0"+t.getDayOfMonth():t.getDayOfMonth()) +
+                "/"+t.getMonth()+"/"+t.getYear()+
+                " alle "+
+                (t.getHour()<10?"0"+t.getHour():t.getHour()) +
+                ":"+
+                (t.getMinute()<10?"0"+t.getMinute():t.getMinute()));
+        data.setFont(titolo.getFont());
+
+        VBox vb=WindowsManager.createVBox(25,10,null,titolo,grafici);
+        vb.getChildren().add(data);
+        return vb;
     }
 
 
     private static PieChart creaGrafico(String title,Map<String,Integer> vals){
         ObservableList<PieChart.Data> pieChartData = FXCollections.observableArrayList();
         vals.forEach((k,v)->{
-            //System.out.println(k+"|"+v);
-            pieChartData.add(new PieChart.Data(k,v));});
+            pieChartData.add(new PieChart.Data(k,v));
+        });
         final PieChart chart = new PieChart(pieChartData);
         chart.setTitle(title);
         chart.setLabelLineLength(10);
-        chart.setLegendVisible(false);
+        chart.setLegendVisible(true);
+        chart.setLabelsVisible(false);
         return chart;
     }
 

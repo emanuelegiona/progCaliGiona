@@ -18,11 +18,9 @@ import java.net.URI;
 import java.time.LocalDateTime;
 
 public class SchedaSito {
-
     private static Window primaryWindow;
     private static CrawlerResult risultato;
     private static SiteCrawler siteCrawler;
-
 
     public static void showSchedaSito(SplitPane sp, Stage primaryStage, URI uri){
         primaryWindow  = sp.getScene().getWindow();
@@ -37,28 +35,19 @@ public class SchedaSito {
             Text x = new Text("X");
             Pane p = new Pane();
             HBox hb = new HBox(statistiche,p, x);
-
             HBox.setHgrow(p, Priority.ALWAYS);
-
             Tooltip.install(hb, new Tooltip("HBOX"));
-
-
             hb.setPrefWidth(200);
-
-
             bp.setStyle("-fx-background-color: #FFFFFF");
 
             StackPane st = (StackPane) sp.getItems().get(1);
             st.getChildren().add(bp);
 
-
             ToolBar toolBar = new ToolBar(statistiche,p,x);
-
 
             bp.setTop(toolBar);
             bp.setCenter(createSchedaWindow(risultato));
             bp.setBottom(pie(primaryStage, risultato));
-
 
             x.setOnMouseClicked(e -> {
                 SplitPane splitPane = (SplitPane) sp.getItems().get(0);
@@ -70,14 +59,9 @@ public class SchedaSito {
                 links.prefWidthProperty().bind(table.widthProperty().multiply(0.875));
                 tb.prefWidthProperty().bind(table.widthProperty().multiply(0.125));
                 sp.getItems().remove(sp.getItems().get(1));
-
             });
-
         }
-
-
     }
-
 
     private static HBox pie(Stage primaryStage, CrawlerResult risultato){
         Button apriSito = WindowsManager.createButton("Apri sito", 100,50,null,false);
@@ -94,17 +78,12 @@ public class SchedaSito {
             }else{
                 Links.showLinksWindow(primaryStage, risultato);
             }
-
-
-
         });
 
         return WindowsManager.createHBox(10,5,null,null,apriSito,apriLinks);
-
     }
 
     private static Parent createSchedaWindow(CrawlerResult cr){
-
         String indirizzoUri = ottimizzaUri(cr.uri);
 
         Exception e = cr.exc;
@@ -115,7 +94,6 @@ public class SchedaSito {
             if(cr.errRawLinks!=null) errSize = cr.errRawLinks.size();
             if (cr.links!= null) linksSize = cr.links.size();
         }
-
 
         Text uriLbl = new Text("Uri: " + indirizzoUri);
         uriLbl.setFont(Font.font(14));
@@ -144,18 +122,24 @@ public class SchedaSito {
 
         if(!exc.equals("null")) vb.getChildren().add(excLbl);
 
-        Text conta1 = new Text("Numero link verso questa pagina: "+MainGUI.getStats().get(cr.uri)[0]);
-        conta1.setFont(uriLbl.getFont());
-        vb.getChildren().add(conta1);
+        if(e==null) {
+            Text conta1 = new Text("Numero link verso questa pagina: " + MainGUI.getStats().get(cr.uri)[0]);
+            conta1.setFont(uriLbl.getFont());
+            vb.getChildren().add(conta1);
 
-        Text conta2 = new Text("Numero link a pagine fuori dal dominio: "+MainGUI.getStats().get(cr.uri)[1]);
-        conta2.setFont(uriLbl.getFont());
-        vb.getChildren().add(conta2);
-
-        vb.getChildren().addAll(creaGrafico("Links totali"), creaGrafico("Links pagina"));
+            Text conta2 = new Text("Numero link a pagine fuori dal dominio: " + MainGUI.getStats().get(cr.uri)[1]);
+            conta2.setFont(uriLbl.getFont());
+            vb.getChildren().add(conta2);
+        }
 
         LocalDateTime t=LocalDateTime.now();
-        Text data=new Text("Ultimo aggiornamento: "+t.getDayOfMonth()+"/"+t.getMonth()+"/"+t.getYear()+" alle "+t.getHour()+":"+t.getMinute());
+        Text data=new Text("Ultimo aggiornamento: "+
+                (t.getDayOfMonth()<10?"0"+t.getDayOfMonth():t.getDayOfMonth()) +
+                "/"+t.getMonth()+"/"+t.getYear()+
+                " alle "+
+                (t.getHour()<10?"0"+t.getHour():t.getHour()) +
+                ":"+
+                (t.getMinute()<10?"0"+t.getMinute():t.getMinute()));
         data.setFont(uriLbl.getFont());
         vb.getChildren().add(data);
 
@@ -164,25 +148,6 @@ public class SchedaSito {
 
         return vb;
     }
-
-
-    private static PieChart creaGrafico(String title){
-        ObservableList<PieChart.Data> pieChartData =
-                FXCollections.observableArrayList(
-                        new PieChart.Data("Grapefruit", 13),
-                        new PieChart.Data("Oranges", 25));
-        final PieChart chart = new PieChart(pieChartData);
-        chart.setTitle(title);
-        chart.setLabelLineLength(10);
-        chart.setLegendVisible(false);
-        chart.setPrefSize(300,300);
-
-
-
-        return chart;
-    }
-
-
 
     private static String ottimizzaUri(URI uri){
         String uriFinale = uri.toString();

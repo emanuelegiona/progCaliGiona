@@ -1,5 +1,6 @@
 package src.wsa.web;
 
+import javafx.scene.control.Alert;
 import src.wsa.gui.MainGUI;
 import src.wsa.gui.UriTableView;
 import src.wsa.gui.WindowsManager;
@@ -21,6 +22,7 @@ public class SimpleSiteCrawler implements SiteCrawler{
     private String savePath;
     private Thread crawlingThread;
     private volatile Map<URI, CrawlerResult> results;
+    private Timer timer;
 
     private int ID;
 
@@ -30,7 +32,7 @@ public class SimpleSiteCrawler implements SiteCrawler{
 
 
         if(dom!=null) {
-            savePath = this.dir + "\\" + dom.getAuthority()+"h"+LocalDateTime.now().toString().replace(":", "m").replace(".", "_") +".cg";
+            savePath = this.dir + "/" + dom.getAuthority()+"h"+LocalDateTime.now().toString().replace(":", "m").replace(".", "_") +".cg";
             succDownload = new HashSet<>();
             toDownload = new HashSet<>();
             failDownload = new HashSet<>();
@@ -46,18 +48,12 @@ public class SimpleSiteCrawler implements SiteCrawler{
                 if(e.getClass().equals(IOException.class))
                     throw new IOException(e.getMessage());
                 else
-                    //throw new IllegalArgumentException("ERRORE: il file non contiene un archivio.");
-                    e.printStackTrace();
+                    throw new IllegalArgumentException("ERRORE: il file non contiene un archivio.");
             }
         }
 
         pageLink=(URI u)->SiteCrawler.checkSeed(this.dom,u);
         crawler=WebFactory.getCrawler(succDownload,toDownload,failDownload,pageLink);
-
-        /*
-        ID=MainGUI.ID;
-        MainGUI.crID.put(crawler,ID);
-        */
     }
 
     /**
@@ -93,10 +89,10 @@ public class SimpleSiteCrawler implements SiteCrawler{
         if(isCancelled())
             throw new IllegalStateException();
 
-        if(!isRunning() && !toDownload.isEmpty()){
+        if(!isRunning()){
             crawler.start();
 
-            Timer timer = new Timer(true);
+            timer = new Timer(true);
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
@@ -107,7 +103,7 @@ public class SimpleSiteCrawler implements SiteCrawler{
                         e.printStackTrace();
                     }
                 }
-            }, 5000 /**//*60000/**/, /*5000*/ /**/60000/**/);
+            }, 5000 /**//*60000/**/, /**/30000/**/ /*60000*/);
 
             crawlingThread=new Thread(()->{
                 while(true){
@@ -125,10 +121,6 @@ public class SimpleSiteCrawler implements SiteCrawler{
                         crawlingThread.interrupt();
                         break;
                     }
-
-                   /****************************** if(Math.abs(this.toDownload.size()+this.succDownload.size()+this.failDownload.size())-
-                            (crawler.getToLoad().size()+crawler.getLoaded().size()+crawler.getErrors().size())>30)
-                        update();*****************************************/
                 }
             });
             crawlingThread.setDaemon(true);
@@ -153,9 +145,14 @@ public class SimpleSiteCrawler implements SiteCrawler{
         if(isRunning()){
             crawler.suspend();
             crawlingThread.interrupt();
+            timer.cancel();
 
-            if(dir!=null){
-                update();
+            update();
+            try{
+                save();
+            }catch(Exception e){
+                Alert alert=WindowsManager.creaAlert(Alert.AlertType.ERROR,"Errore","Errore durante il salvataggio");
+                alert.show();
             }
         }
     }
@@ -169,6 +166,10 @@ public class SimpleSiteCrawler implements SiteCrawler{
     public void cancel() {
         suspend();
         crawler.cancel();
+        succDownload=null;
+        toDownload=null;
+        failDownload=null;
+        results=null;
     }
 
     /**
@@ -209,10 +210,7 @@ public class SimpleSiteCrawler implements SiteCrawler{
         if(!succDownload.contains(uri) && !failDownload.contains(uri))
             throw new IllegalArgumentException();
 
-
-
         return results.get(uri);
-
     }
 
     /**

@@ -1,13 +1,9 @@
 package src.wsa.web;
 
-
 import javafx.application.Platform;
-import javafx.scene.control.Alert;
+import javafx.scene.control.Tab;
 import src.wsa.gui.MainGUI;
-
 import src.wsa.gui.UriTableView;
-import src.wsa.gui.WindowsManager;
-
 import java.io.UnsupportedEncodingException;
 import java.net.*;
 import java.util.*;
@@ -31,7 +27,7 @@ public class SimpleCrawler implements Crawler{
     //modifica
     public SimpleCrawler(Collection<URI> succDownload, Collection<URI> toDownload, Collection<URI> failDownload, Predicate<URI> rule) {
         this.succDownload = new HashSet<>(succDownload);
-        this.toDownload = new HashSet<>(toDownload);
+        this.toDownload = new ConcurrentSkipListSet<>(toDownload);
         this.failDownload = new HashSet<>(failDownload);
         this.analyzingURIs=new HashSet<>();
         this.rule=rule;
@@ -73,28 +69,30 @@ public class SimpleCrawler implements Crawler{
 
 
     private void downloadFunc(){
-            for (URI u : toDownload) {
-                if(analyzeThread.isInterrupted()) {
-                    analyzeThread.interrupt();
-                    return;
-                }
+        if(toDownload.size()==0)
+            return;
 
-                if(analyzingURIs.size() == (Runtime.getRuntime().availableProcessors()*10)) break;
-
-                boolean tested = rule.test(u);
-                try {
-                    analyzingURIs.add(u);
-                    Object o[] = {u, loader.submit(u.toURL()), 4};
-                    tasks.add(o);
-
-                } catch (MalformedURLException e) {
-                    failDownload.add(u);
-                    results.add(new CrawlerResult(u, tested, null, null, e));
-                    updateTable(u, "  Fallito");
-                }
-
+        for (URI u : toDownload) {
+            if(analyzeThread.isInterrupted()) {
+                analyzeThread.interrupt();
+                return;
             }
-            toDownload.removeAll(analyzingURIs);
+
+            if(analyzingURIs.size() == (Runtime.getRuntime().availableProcessors()*10)) break;
+
+            boolean tested = rule.test(u);
+            try {
+                analyzingURIs.add(u);
+                Object o[] = {u, loader.submit(u.toURL()), 4};
+                tasks.add(o);
+
+            } catch (MalformedURLException e) {
+                failDownload.add(u);
+                results.add(new CrawlerResult(u, tested, null, null, e));
+                updateTable(u, "  Fallito");
+            }
+        }
+        toDownload.removeAll(analyzingURIs);
     }
 
 
@@ -104,7 +102,7 @@ public class SimpleCrawler implements Crawler{
         try {
             uri=URI.create(s);
         }catch(IllegalArgumentException e1) {
-            String reserved="!*'();:@&=+$,/?#[] ";
+            String reserved="!*'();:@&=+$,/?#[]{} ";
             String s1=s.substring(0,s.indexOf("//")+2);
             s1=s1.replace(" ","");
             String s2=s.substring(s.indexOf("//")+2);
@@ -157,27 +155,27 @@ public class SimpleCrawler implements Crawler{
 
 
     private void analyzeFunc(){
-        boolean mostrato = false;
-
+        boolean done=false;
         while (true) {
-
             if(analyzeThread.isInterrupted()) {
                 analyzeThread.interrupt();
                 return;
             }
 
-            if(toDownload.size() == 0){
-                if(!mostrato){Platform.runLater(() ->{
-                    Alert alert = WindowsManager.creaAlert(Alert.AlertType.INFORMATION, "Informazione", "Esplorazione completata");
-                    alert.showAndWait();
-                });
-                    mostrato = true;
+            if(toDownload.size()==0 && analyzingURIs.size()==0){
+                if(!done) {
+                    int ID = MainGUI.crID.get(this);
+                    for (Tab t : MainGUI.tabCrawlers.keySet()) {
+                        if (MainGUI.tabCrawlers.get(t).equals(ID)) {
+                            Platform.runLater(() -> t.setText("Completato"));
+                            done = true;
+                            break;
+                        }
+                    }
                 }
-
                 continue;
             }
             downloadFunc();
-
 
             Object[] o;
             while((o=tasks.poll())!= null){
@@ -187,10 +185,8 @@ public class SimpleCrawler implements Crawler{
                 }
 
                 Future<LoadResult> t=(Future<LoadResult>)o[1];
-
                 try {
                     LoadResult res=t.get(3000,TimeUnit.MILLISECONDS);
-
 
                     try {
                         URI u = res.url.toURI();
@@ -202,8 +198,6 @@ public class SimpleCrawler implements Crawler{
                         List<URI> absLinks = new ArrayList<>();
                         List<String> errLinks = new ArrayList<>();
 
-
-                        //TODO: controllare dominio con i file e conteggi
                         if (rule.test(u)) {
                             int out=0;
                             for (String s: links) {
@@ -214,8 +208,6 @@ public class SimpleCrawler implements Crawler{
 
                                 URI uri = bonifica(s);
                                 URI nUri = u.resolve(uri);
-                                if(nUri.toString().contains("file:/"))
-                                    System.out.println("file");
                                 try {
                                     URL testUrl = nUri.toURL();
                                     absLinks.add(nUri);
@@ -225,11 +217,9 @@ public class SimpleCrawler implements Crawler{
                                 }
                                 add(nUri);
                                 if(!rule.test(nUri)) {
-                                    System.out.println(nUri+" fuori dominio");
                                     out++;
                                 }
                             }
-                            System.out.println("uri " + u + ":" + out);
                             updateOccur(u, 1, out);
                         }
 
@@ -239,7 +229,6 @@ public class SimpleCrawler implements Crawler{
                         results.add(new CrawlerResult((URI)o[0], rule.test((URI)o[0]), null, null, e));
                         failDownload.add((URI)o[0]);
                         updateTable((URI)o[0], "  Fallito");
-
                     }
                 } catch (InterruptedException e) {
                     tasks.add(o);
@@ -257,13 +246,8 @@ public class SimpleCrawler implements Crawler{
                         results.add(new CrawlerResult(u,rule.test(u),null,null, new Exception("Tentativi di download falliti: 5")));
                         updateTable(u, "  Fallito");
                     }
-
-
                 }
-
             }
-
-
         }
     }
 
@@ -273,7 +257,6 @@ public class SimpleCrawler implements Crawler{
         try{
             MainGUI.getData(identify()).set(MainGUI.getData(identify()).indexOf(utv),utv);
         }catch (Exception e){
-            //System.out.println(utv.getUri());
         }
     }
 
