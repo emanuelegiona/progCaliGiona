@@ -41,6 +41,8 @@ public class SimpleCrawler implements Crawler{
         results=new ConcurrentLinkedQueue<>();
         tableMap = new HashMap<>();
 
+        MainGUI.crID.put(this,MainGUI.ID);
+
         this.toDownload.forEach(u -> {
             UriTableView utv = new UriTableView(u, " In Download...");
             tableMap.put(u, utv);

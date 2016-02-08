@@ -281,9 +281,6 @@ public class DirectoryWindow {
             Platform.runLater(() -> {
                 Object[] objects = new Object[5];
                 Tab tab = new Tab("Tab");
-                MainGUI.tabPane.getTabs().add(tab);
-                MainGUI.tabPane.getSelectionModel().select(tab);
-
                 ObservableList<UriTableView> fx = FXCollections.observableArrayList();
                 objects[0] = siteCrawler;
                 objects[1] = fx;
@@ -292,6 +289,9 @@ public class DirectoryWindow {
 
                 MainGUI.tabCrawlers.put(tab,MainGUI.ID);
                 MainGUI.activeCrawlers.put(MainGUI.ID,objects);
+
+                MainGUI.tabPane.getTabs().add(tab);
+                MainGUI.tabPane.getSelectionModel().select(tab);
 
                 SplitPane sp = MainGUI.tableView();
                 tab.setContent(sp);

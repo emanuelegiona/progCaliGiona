@@ -76,10 +76,8 @@ public class MainGUI extends Application {
         tabPane = new TabPane();
 
         tabPane.getSelectionModel().selectedItemProperty().addListener((ov, t, t1) -> {
-            if(MainGUI.ID>1) {
-                System.out.println("cambio scheda");
+            if(getSiteCrawler()!=null) {
                 SiteCrawler siteCrawler = getSiteCrawler();
-                System.out.println(siteCrawler);
                 if (!siteCrawler.isCancelled()) {
                     if (siteCrawler.isRunning()) {
                         suspendBtn.setDisable(false);
@@ -263,18 +261,11 @@ public class MainGUI extends Application {
                 ID++;
                 Object[] objects = new Object[5];
                 Tab tab = new Tab("Tab");
-                tabPane.getTabs().add(tab);
-                tabPane.getSelectionModel().select(tab);
+
                 ObservableList<UriTableView> fx = FXCollections.observableArrayList();
                 objects[1] = fx;
                 objects[3] = new HashMap<URI,Integer[]>();
-                tabCrawlers.put(tab,ID);
-                activeCrawlers.put(ID, objects);
-
-                SplitPane sp = MainGUI.tableView();
-                tab.setContent(sp);
-                objects[2] = sp;
-
+                objects[4] = null;
                 activeCrawlers.put(ID, objects);
 
                 FileChooser fileChooser = new FileChooser();
@@ -282,16 +273,26 @@ public class MainGUI extends Application {
                 Path path = selectedFile.toPath();
                 fileChooser.setTitle("Seleziona file");
                 SiteCrawler siteCrawler = WebFactory.getSiteCrawler(null, path);
+
                 objects[0] = siteCrawler;
                 activeCrawlers.put(ID, objects);
 
-                siteCrawler.start();
+                tabCrawlers.put(tab,ID);
+                activeCrawlers.put(ID, objects);
 
+                tabPane.getTabs().add(tab);
+                tabPane.getSelectionModel().select(tab);
+
+                SplitPane sp = MainGUI.tableView();
+                tab.setContent(sp);
+                objects[2] = sp;
+
+                activeCrawlers.put(ID, objects);
+                siteCrawler.start();
             } catch (IOException e1) {
                 Alert alert=WindowsManager.creaAlert(Alert.AlertType.ERROR,"Errore","Errore di I/O ("+e1.getMessage()+")");
                 alert.showAndWait();
             } catch (Exception e2){
-                e2.printStackTrace();
             }
         });
 

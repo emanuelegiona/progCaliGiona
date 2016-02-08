@@ -46,15 +46,18 @@ public class SimpleSiteCrawler implements SiteCrawler{
                 if(e.getClass().equals(IOException.class))
                     throw new IOException(e.getMessage());
                 else
-                    throw new IllegalArgumentException("ERRORE: il file non contiene un archivio.");
+                    //throw new IllegalArgumentException("ERRORE: il file non contiene un archivio.");
+                    e.printStackTrace();
             }
         }
 
         pageLink=(URI u)->SiteCrawler.checkSeed(this.dom,u);
         crawler=WebFactory.getCrawler(succDownload,toDownload,failDownload,pageLink);
 
+        /*
         ID=MainGUI.ID;
         MainGUI.crID.put(crawler,ID);
+        */
     }
 
     /**
@@ -298,25 +301,25 @@ public class SimpleSiteCrawler implements SiteCrawler{
         Object[] array=WindowsManager.apriArchivio(dir.toString());
 
         this.dom=(URI)array[0];
-        Object[] objects=MainGUI.activeCrawlers.get(identify());
+        Object[] objects=MainGUI.activeCrawlers.get(MainGUI.ID);
+        objects[0]=this;
         objects[4]=this.dom;
-        MainGUI.activeCrawlers.put(identify(),objects);
+        MainGUI.activeCrawlers.put(MainGUI.ID,objects);
 
         this.succDownload=(Set<URI>)array[1];
         this.toDownload=(Set<URI>)array[2];
         this.failDownload=(Set<URI>)array[3];
         this.results = new HashMap<>();
-        ((HashMap<URI,CRSerializable>)array[4]).forEach((uri,cr)-> this.results.put(uri,new CrawlerResult(cr.u,cr.lp,cr.links,cr.err,cr.e)));
-        results.forEach((uri, cr) -> MainGUI.getData(identify()).add(new UriTableView(uri, (cr.exc==null?"Completato":"  Fallito"))));
-        /*Map<URI,Integer[]> stats=(HashMap<URI,Integer[]>)array[5];
-        Object[] objects=new Object[4];
+        ((HashMap<URI,CRSerializable>)array[4]).forEach((uri,cr)-> this.results.put(uri,new CrawlerResult(cr.u,cr.lp, cr.links, cr.err, cr.e)));
+        results.forEach((uri, cr) -> MainGUI.getData(MainGUI.ID).add(new UriTableView(uri, (cr.exc==null?"Completato":"  Fallito"))));
+        Map<URI,Integer[]> stats=(HashMap<URI,Integer[]>)array[5];
         objects[3]=stats;
-        MainGUI.activeCrawlers.put(identify(),objects);*/
+        MainGUI.activeCrawlers.put(identify(),objects);
     }
 
     private int identify(){
         for(int i:MainGUI.activeCrawlers.keySet())
-            if(MainGUI.getSiteCrawler(i).equals(this))
+            if (MainGUI.getSiteCrawler(i).equals(this))
                 return i;
         return 0;
     }
