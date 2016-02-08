@@ -50,7 +50,7 @@ public class WindowsManager {
     public static HBox createHBox(int spacing, int padding, Pos alignment, Text text, Parent... elementi){
         HBox hb = new HBox();
         if (text != null) hb.getChildren().add(text);
-        hb.getChildren().addAll(elementi);
+        if (elementi!=null) hb.getChildren().addAll(elementi);
         hb.setSpacing(spacing);
         hb.setPadding(new Insets(padding));
         if (alignment != null) hb.setAlignment(alignment);

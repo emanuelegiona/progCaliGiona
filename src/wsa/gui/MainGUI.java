@@ -41,6 +41,7 @@ public class MainGUI extends Application {
     public static Button stopBtn;
     public static ToggleButton piu;
     public static Button grafico;
+    public static Tab guidaTab=new Tab("Guida");
 
     public static void main(String[] args) {
         launch(args);
@@ -60,6 +61,7 @@ public class MainGUI extends Application {
         stage.show();
         stage.setMinWidth(980);
         stage.setMinHeight(650);
+        Guida.creaGuida(guidaTab);
     }
 
 
@@ -69,9 +71,11 @@ public class MainGUI extends Application {
      */
     private Parent finestra(){
         tabPane = new TabPane();
+        tabPane.getTabs().add(guidaTab);
+
         tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         tabPane.getSelectionModel().selectedItemProperty().addListener((ov, t, t1) -> {
-            if(t1!=null) {
+            if(t1!=null && !t1.equals(guidaTab)) {
                 if (getSiteCrawler() != null) {
                     SiteCrawler siteCrawler = getSiteCrawler();
                     if (siteCrawler.isCancelled()) {
@@ -236,6 +240,8 @@ public class MainGUI extends Application {
 
         apriBtn.setOnAction(e -> {
             try {
+                MainGUI.tabPane.getTabs().remove(MainGUI.guidaTab);
+
                 ID++;
                 Object[] objects = new Object[5];
                 Tab tab = new Tab("In Download");
@@ -326,6 +332,8 @@ public class MainGUI extends Application {
                     }
                 }
                 crID.remove(target);
+                if(tabPane.getTabs().size()==0)
+                    tabPane.getTabs().add(guidaTab);
             }
         });
 

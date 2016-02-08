@@ -274,6 +274,8 @@ public class DirectoryWindow {
             SiteCrawler siteCrawler = WebFactory.getSiteCrawler(dom, path);
             final URI finalDom = dom;
             Platform.runLater(() -> {
+                MainGUI.tabPane.getTabs().remove(MainGUI.guidaTab);
+
                 Object[] objects = new Object[5];
                 Tab tab = new Tab("In Download");
                 tab.setTooltip(new Tooltip(finalDom.toString()));
