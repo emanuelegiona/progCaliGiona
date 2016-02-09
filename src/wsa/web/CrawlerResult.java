@@ -8,18 +8,18 @@ import java.util.List;
 
 public class CrawlerResult{
     /** L'URI della pagina o null. Se null, significa che la prossima pagina
-     * non è ancora pronta. */
+     * non e' ancora pronta. */
     public final URI uri;
-    /** true se l'URI è di una pagina i cui link sono seguiti. Se false i campi
+    /** true se l'URI e' di una pagina i cui link sono seguiti. Se false i campi
      * links e errRawLinks sono null. */
     public final boolean linkPage;
     /** La lista degli URI assoluti dei link della pagina o null */
     public final List<URI> links;
-    /** La lista dei link che non è stato possibile trasformare in URI assoluti
+    /** La lista dei link che non e' stato possibile trasformare in URI assoluti
      * o null */
     public final List<String> errRawLinks;
-    /** Se è null, la pagina è stata scaricata altrimenti non è stato possibile
-     * scaricarla e l'eccezione ne dà la causa */
+    /** Se e' null, la pagina e' stata scaricata altrimenti non e' stato possibile
+     * scaricarla e l'eccezione ne da' la causa */
     public final Exception exc;
 
     public CrawlerResult(URI u, boolean lp, List<URI> ll, List<String> erl,

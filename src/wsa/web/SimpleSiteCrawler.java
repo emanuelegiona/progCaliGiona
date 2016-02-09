@@ -1,7 +1,7 @@
 package src.wsa.web;
 
 import javafx.scene.control.Alert;
-import src.wsa.gui.MainGUI;
+import src.wsa.gui.Main;
 import src.wsa.gui.UriTableView;
 import src.wsa.gui.WindowsManager;
 import java.io.IOException;
@@ -11,6 +11,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Predicate;
 
+/** Effettua il crawling di un sito, partendo da un dominio e da seeds.
+ * Consente l'archiviazione dell'esplorazione specificando un percorso.
+ * Implementa SiteCrawler.*/
 public class SimpleSiteCrawler implements SiteCrawler{
     private volatile URI dom;
     private final Path dir;
@@ -24,12 +27,15 @@ public class SimpleSiteCrawler implements SiteCrawler{
     private volatile Map<URI, CrawlerResult> results;
     private Timer timer;
 
-    private int ID;
-
+    /** Costruttore di SimpleSiteCrawler.
+     * @param dom URI del dominio del crawling; puo' essere null solo se viene ripresa un'esplorazione precedentemente archiviata.
+     * @param dir Path del percorso di archiviazione; puo' essere null, non avverra' alcuna archiviazione.
+     * @throws IllegalArgumentException se dir non contiene un archivio valido.
+     * @throws IOException se avvengono errori in fasi di lettura o scrittura dell'archivio.
+     */
     public SimpleSiteCrawler(URI dom, Path dir) throws IllegalArgumentException,IOException{
         this.dom=dom;
         this.dir=dir;
-
 
         if(dom!=null) {
             savePath = this.dir + "/" + dom.getAuthority()+"h"+LocalDateTime.now().toString().replace(":", "m").replace(".", "_") +".cg";
@@ -57,32 +63,33 @@ public class SimpleSiteCrawler implements SiteCrawler{
     }
 
     /**
-     * Aggiunge un seed URI. Se però è presente tra quelli già scaricati,
+     * Aggiunge un seed URI. Se pero' e' presente tra quelli gia' scaricati,
      * quelli ancora da scaricare o quelli che sono andati in errore,
-     * l'aggiunta non ha nessun effetto. Se invece è un nuovo URI, è aggiunto
+     * l'aggiunta non ha nessun effetto. Se invece e' un nuovo URI, e' aggiunto
      * all'insieme di quelli da scaricare.
      *
      * @param uri un URI
      * @throws IllegalArgumentException se uri non appartiene al dominio di
      *                                  questo SuteCrawlerrawler
-     * @throws IllegalStateException    se il SiteCrawler è cancellato
+     * @throws IllegalStateException    se il SiteCrawler e' cancellato
      */
     @Override
     public void addSeed(URI uri) throws IllegalArgumentException,IllegalStateException{
         if(isCancelled())
             throw new IllegalStateException();
+
         if(!SiteCrawler.checkSeed(dom,uri))
             throw new IllegalArgumentException();
-        toDownload.add(uri);
+
         crawler.add(uri);
     }
 
     /**
-     * Inizia l'esecuzione del SiteCrawler se non è già in esecuzione e ci sono
-     * URI da scaricare, altrimenti l'invocazione è ignorata. Quando è in
+     * Inizia l'esecuzione del SiteCrawler se non e' gia' in esecuzione e ci sono
+     * URI da scaricare, altrimenti l'invocazione e' ignorata. Quando e' in
      * esecuzione il metodo isRunning ritorna true.
      *
-     * @throws IllegalStateException se il SiteCrawler è cancellato
+     * @throws IllegalStateException se il SiteCrawler e' cancellato
      */
     @Override
     public void start() throws IllegalStateException{
@@ -103,7 +110,7 @@ public class SimpleSiteCrawler implements SiteCrawler{
                         e.printStackTrace();
                     }
                 }
-            }, 5000 /**//*60000/**/, /**/30000/**/ /*60000*/);
+            }, 5000, 30000);
 
             crawlingThread=new Thread(()->{
                 while(true){
@@ -128,26 +135,26 @@ public class SimpleSiteCrawler implements SiteCrawler{
         }
     }
 
-
     /**
-     * Sospende l'esecuzione del SiteCrawler. Se non è in esecuzione, ignora
-     * l'invocazione. L'esecuzione può essere ripresa invocando start. Durante
-     * la sospensione l'attività dovrebbe essere ridotta al minimo possibile
-     * (eventuali thread dovrebbero essere terminati). Se è stata specificata
-     * una directory per l'archiviazione, lo stato del crawling è archiviato.
+     * Sospende l'esecuzione del SiteCrawler. Se non e' in esecuzione, ignora
+     * l'invocazione. L'esecuzione puo' essere ripresa invocando start. Durante
+     * la sospensione l'attivita' dovrebbe essere ridotta al minimo possibile
+     * (eventuali thread dovrebbero essere terminati). Se e' stata specificata
+     * una directory per l'archiviazione, lo stato del crawling e' archiviato.
      *
-     * @throws IllegalStateException se il SiteCrawler è cancellato
+     * @throws IllegalStateException se il SiteCrawler e' cancellato
      */
     @Override
     public void suspend() throws IllegalStateException{
         if(isCancelled())
             throw new IllegalStateException();
+
         if(isRunning()){
             crawler.suspend();
             crawlingThread.interrupt();
             timer.cancel();
-
             update();
+
             try{
                 save();
             }catch(Exception e){
@@ -159,13 +166,14 @@ public class SimpleSiteCrawler implements SiteCrawler{
 
     /**
      * Cancella il SiteCrawler per sempre. Dopo questa invocazione il
-     * SiteCrawler non può più essere usato. Tutte le risorse sono
+     * SiteCrawler non puo' piu' essere usato. Tutte le risorse sono
      * rilasciate.
      */
     @Override
     public void cancel() {
         suspend();
         crawler.cancel();
+
         succDownload=null;
         toDownload=null;
         failDownload=null;
@@ -173,12 +181,12 @@ public class SimpleSiteCrawler implements SiteCrawler{
     }
 
     /**
-     * Ritorna il risultato relativo al prossimo URI. Se il SiteCrawler non è
-     * in esecuzione, ritorna un Optional vuoto. Non è bloccante, ritorna
-     * immediatamente anche se il prossimo risultato non è ancora pronto.
+     * Ritorna il risultato relativo al prossimo URI. Se il SiteCrawler non e'
+     * in esecuzione, ritorna un Optional vuoto. Non e' bloccante, ritorna
+     * immediatamente anche se il prossimo risultato non e' ancora pronto.
      *
      * @return il risultato relativo al prossimo URI scaricato
-     * @throws IllegalStateException se il SiteCrawler è cancellato
+     * @throws IllegalStateException se il SiteCrawler e' cancellato
      */
     @Override
     public Optional<CrawlerResult> get() throws IllegalStateException{
@@ -188,17 +196,15 @@ public class SimpleSiteCrawler implements SiteCrawler{
         return crawler.get();
     }
 
-    //modifica
-
     /**
      * Ritorna il risultato del tentativo di scaricare la pagina che
      * corrisponde all'URI dato.
      *
      * @param uri un URI
      * @return il risultato del tentativo di scaricare la pagina
-     * @throws IllegalArgumentException se uri non è nell'insieme degli URI
+     * @throws IllegalArgumentException se uri non e' nell'insieme degli URI
      *                                  scaricati né nell'insieme degli URI che hanno prodotto errori.
-     * @throws IllegalStateException    se il SiteCrawler è cancellato
+     * @throws IllegalStateException    se il SiteCrawler e' cancellato
      */
     @Override
     public CrawlerResult get(URI uri) throws IllegalArgumentException,IllegalStateException{
@@ -217,48 +223,51 @@ public class SimpleSiteCrawler implements SiteCrawler{
      * Ritorna l'insieme di tutti gli URI scaricati, possibilmente vuoto.
      *
      * @return l'insieme di tutti gli URI scaricati (mai null)
-     * @throws IllegalStateException se il SiteCrawler è cancellato
+     * @throws IllegalStateException se il SiteCrawler e' cancellato
      */
     @Override
     public Set<URI> getLoaded() throws IllegalStateException {
         if(isCancelled())
             throw new IllegalStateException();
+
         return succDownload;
     }
 
     /**
      * Ritorna l'insieme, possibilmente vuoto, degli URI che devono essere
      * ancora scaricati. Quando l'esecuzione del crawler termina normalmente
-     * l'insieme è vuoto.
+     * l'insieme e' vuoto.
      *
      * @return l'insieme degli URI ancora da scaricare (mai null)
-     * @throws IllegalStateException se il SiteCrawler è cancellato
+     * @throws IllegalStateException se il SiteCrawler e' cancellato
      */
     @Override
     public Set<URI> getToLoad() throws IllegalStateException{
         if(isCancelled())
             throw new IllegalStateException();
+
         return toDownload;
     }
 
     /**
-     * Ritorna l'insieme, possibilmente vuoto, degli URI che non è stato
+     * Ritorna l'insieme, possibilmente vuoto, degli URI che non e' stato
      * possibile scaricare a causa di errori.
      *
      * @return l'insieme degli URI che hanno prodotto errori (mai null)
-     * @throws IllegalStateException se il SiteCrawler è cancellato
+     * @throws IllegalStateException se il SiteCrawler e' cancellato
      */
     @Override
     public Set<URI> getErrors() throws IllegalStateException{
         if(isCancelled())
             throw new IllegalStateException();
+
         return failDownload;
     }
 
     /**
-     * Ritorna true se il SiteCrawler è in esecuzione.
+     * Ritorna true se il SiteCrawler e' in esecuzione.
      *
-     * @return true se il SiteCrawler è in esecuzione
+     * @return true se il SiteCrawler e' in esecuzione
      */
     @Override
     public boolean isRunning() {
@@ -266,60 +275,84 @@ public class SimpleSiteCrawler implements SiteCrawler{
     }
 
     /**
-     * Ritorna true se il SiteCrawler è stato cancellato. In tal caso non può
-     * più essere usato.
+     * Ritorna true se il SiteCrawler e' stato cancellato. In tal caso non puo'
+     * piu' essere usato.
      *
-     * @return true se il SiteCrawler è stato cancellato
+     * @return true se il SiteCrawler e' stato cancellato
      */
     @Override
     public boolean isCancelled() {
         return crawler.isCancelled();
     }
 
+    /** Sincronizza gli insiemi di questo SimpleSiteCrawler con quelli del Crawler utilizzato internamente.*/
     private void update(){
         succDownload=crawler.getLoaded();
         toDownload=crawler.getToLoad();
         failDownload=crawler.getErrors();
     }
 
+    /** Se dir non e' null, archivia le seguenti informazioni sull'esplorazione:
+     * - dominio
+     * - gli insiemi succDownload, toDownload, failDownload
+     * - mappa di URI con i rispettivi risultati
+     * - mappa di URI con i rispettivi dati (numero occorrenze, numero link uscenti, numero immagini, numero nodi nell'albero)
+     * - massimo numero di link in una pagina
+     * - URI interni al dominio
+     * Fa utilizzo del metodo di utilita' WindowsManager.salvaArchivio.
+     *
+     * @throws Exception qualsiasi errore di I/O ed eventuali errori di tipo
+     */
     private void save() throws Exception{
         if(dir!=null) {
             Map<URI,CRSerializable> serial=new HashMap<>();
             results.forEach((u,cr)->serial.put(u,new CRSerializable(cr)));
-            Map<URI,Integer[]> stats=MainGUI.getStats(identify());
-            Object[] o=MainGUI.activeCrawlers.get(identify());
+            Map<URI,Integer[]> stats= Main.getStats(identify());
+            Object[] o= Main.activeCrawlers.get(identify());
+
             Object[] array = {this.dom, succDownload,toDownload, failDownload, serial, stats, (int)o[5], (int)o[6]};
-            WindowsManager.salvaArchivio(this.dom, savePath, array);
+            WindowsManager.salvaArchivio(savePath, array);
         }
     }
 
+    /** Apre un archivio, specificato tramite il nome file.
+     * Un nome file accettato e' composto dal dominio dell'esplorazione seguito da un timestamp.
+     * Fa utilizzo del metodo di utilita' WindowsManager.apriArchivio.
+     *
+     * @param fileName il nome del file da aprire com archivio
+     * @throws Exception qualsiasi errore di I/O ed eventuali errori di tipo
+     */
     private void open(String fileName) throws Exception{
         fileName=fileName.substring(0,fileName.lastIndexOf("h"));
         URI u=new URI(fileName);
         Object[] array=WindowsManager.apriArchivio(dir.toString());
 
         this.dom=(URI)array[0];
-        Object[] objects=MainGUI.activeCrawlers.get(MainGUI.ID);
+        Object[] objects= Main.activeCrawlers.get(Main.ID);
         objects[0]=this;
         objects[4]=this.dom;
         objects[5]=(int)array[6];
         objects[6]=(int)array[7];
-        MainGUI.activeCrawlers.put(MainGUI.ID,objects);
+        Main.activeCrawlers.put(Main.ID,objects);
 
         this.succDownload=(Set<URI>)array[1];
         this.toDownload=(Set<URI>)array[2];
         this.failDownload=(Set<URI>)array[3];
         this.results = new HashMap<>();
+
         ((HashMap<URI,CRSerializable>)array[4]).forEach((uri,cr)-> this.results.put(uri,new CrawlerResult(cr.u,cr.lp, cr.links, cr.err, cr.e)));
-        results.forEach((uri, cr) -> MainGUI.getData(MainGUI.ID).add(new UriTableView(uri, (cr.exc==null?"Completato":"  Fallito"))));
+        results.forEach((uri, cr) -> Main.getData(Main.ID).add(new UriTableView(uri, (cr.exc==null?"Completato":"  Fallito"))));
+
         Map<URI,Integer[]> stats=(HashMap<URI,Integer[]>)array[5];
         objects[3]=stats;
-        MainGUI.activeCrawlers.put(identify(),objects);
+        Main.activeCrawlers.put(identify(),objects);
     }
 
+    /** Identifica il SimpleSiteCrawler in esecuzione
+     * @return l'identita' di questo SimpleSiteCrawler se presente, altrimenti 0*/
     private int identify(){
-        for(int i:MainGUI.activeCrawlers.keySet())
-            if (MainGUI.getSiteCrawler(i).equals(this))
+        for(int i: Main.activeCrawlers.keySet())
+            if (Main.getSiteCrawler(i).equals(this))
                 return i;
         return 0;
     }

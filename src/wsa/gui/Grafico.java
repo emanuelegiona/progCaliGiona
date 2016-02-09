@@ -12,19 +12,21 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import src.wsa.web.SiteCrawler;
-
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/** La finestra delle statistiche di un'esplorazione*/
 public class Grafico {
     private static Stage stage = new Stage();
 
+    /** Crea e mostra la finestra delle statistiche
+     * @param primaryStage il Main stage
+     * @param ID l'identificatore dell'esplorazione alla quale si riferisce*/
     public static void  showGraphic(Stage primaryStage, int ID){
         stage.setTitle("Grafico");
-
         try{
             stage.initOwner(primaryStage);
             stage.setAlwaysOnTop(false);
@@ -38,21 +40,23 @@ public class Grafico {
         stage.setMinWidth(600);
     }
 
+    /** Crea il contenuto della finestra.
+     * @param ID l'identificatore dell'esplorazione alla quale si riferisce
+     * @return il contenuto della finestra*/
     private static Parent createGraphic(int ID){
-        Object[] objects=MainGUI.activeCrawlers.get(ID);
-
+        Object[] objects= Main.activeCrawlers.get(ID);
         ConcurrentHashMap<URI,Integer[]> stats=new ConcurrentHashMap((HashMap < URI, Integer[]>)objects[3]);
-        HashMap<String,Integer> inData=new HashMap<>();
-        HashMap<String,Integer> outData=new HashMap<>();
+        HashMap<String,Integer> inData=new HashMap<>(); //mappa per i link entranti
+        HashMap<String,Integer> outData=new HashMap<>(); //mappa per i link uscenti
 
-        for(int i=1;i<=10;i++){
+        for(int i=1;i<=10;i++){            //inizializzo le mappe a 0
             inData.put(("<"+(5*i)),0);
             outData.put(("<"+(5*i)),0);
         }
         inData.put("50+",0);
         outData.put("50+",0);
 
-        stats.forEach((u,i)->{
+        stats.forEach((u,i)->{             //scorro le statistiche dei siti e le confronto per riempire le mappe
             int val=i[0];
             for(int j=1;j<=10;j++){
                 if(val<(5*j)){
@@ -109,21 +113,27 @@ public class Grafico {
 
         VBox vb=WindowsManager.createVBox(25,10,null,titolo,grafici);
         vb.getChildren().addAll(totUri, intUri, errUri, maxLink, data);
+
         return vb;
     }
 
-
-    private static PieChart creaGrafico(String title,Map<String,Integer> vals){
+    /** Crea un grafico basato su dati contenuti in una mappa
+     * @param title il titolo del grafico
+     * @param vals la mappa dei dati
+     * @return PieChart il grafico*/
+    private static PieChart creaGrafico(String title, Map<String,Integer> vals){
         ObservableList<PieChart.Data> pieChartData = FXCollections.observableArrayList();
+
         vals.forEach((k,v)->{
             pieChartData.add(new PieChart.Data(k,v));
         });
+
         final PieChart chart = new PieChart(pieChartData);
         chart.setTitle(title);
         chart.setLabelLineLength(10);
         chart.setLegendVisible(true);
         chart.setLabelsVisible(false);
+
         return chart;
     }
-
 }

@@ -8,15 +8,15 @@ public interface AsyncLoader {
     /** Sottomette il downloading della pagina dello specificato URL e ritorna
      * un Future per ottenere il risultato in modo asincrono.
      * @param url  un URL di una pagina web
-     * @throws IllegalStateException se il loader è chiuso
+     * @throws IllegalStateException se il loader e' chiuso
      * @return Future per ottenere il risultato in modo asincrono */
     Future<LoadResult> submit(URL url);
 
-    /** Chiude il loader e rilascia tutte le risorse. Dopo di ciò non può più
+    /** Chiude il loader e rilascia tutte le risorse. Dopo di cio' non puo' piu'
      * essere usato. */
     void shutdown();
 
-    /** Ritorna true se è chiuso.
-     * @return true se è chiuso */
+    /** Ritorna true se e' chiuso.
+     * @return true se e' chiuso */
     boolean isShutdown();
 }

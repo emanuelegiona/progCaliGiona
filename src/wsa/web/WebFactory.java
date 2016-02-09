@@ -22,9 +22,9 @@ public class WebFactory {
         loadFactory=lf;
     }
 
-    /** Ritorna un nuovo Loader. Se non è stata impostata una factory tramite il
-     * metodo setLoaderFactory, il Loader è creato tramite l'implementazione di
-     * default, altrimenti il Loader è creati tramite la factory impostata
+    /** Ritorna un nuovo Loader. Se non e' stata impostata una factory tramite il
+     * metodo setLoaderFactory, il Loader e' creato tramite l'implementazione di
+     * default, altrimenti il Loader e' creati tramite la factory impostata
      * con setLoaderFactory.
      * @return un nuovo Loader */
     public static Loader getLoader() {
@@ -46,7 +46,7 @@ public class WebFactory {
      * @param errs  insieme URI con errori
      * @param pageLink  determina gli URI per i quali i link contenuti nelle
      *                  relative pagine sono usati per continuare il crawling
-     * @return un Crawler con le proprietà specificate */
+     * @return un Crawler con le proprieta' specificate */
     public static Crawler getCrawler(Collection<URI> loaded,
                                      Collection<URI> toLoad,
                                      Collection<URI> errs,
@@ -57,16 +57,16 @@ public class WebFactory {
 
     /** Ritorna un SiteCrawler. Se dom e dir sono entrambi non null, assume che
      * sia un nuovo web site con dominio dom da archiviare nella directory dir.
-     * Se dom non è null e dir è null, l'esplorazione del web site con dominio
-     * dom sarà eseguita senza archiviazione. Se dom è null e dir non è null,
-     * assume che l'esplorazione del web site sia già archiviata nella
+     * Se dom non e' null e dir e' null, l'esplorazione del web site con dominio
+     * dom sara' eseguita senza archiviazione. Se dom e' null e dir non e' null,
+     * assume che l'esplorazione del web site sia gia' archiviata nella
      * directory dir e la apre. Per scaricare le pagine usa esclusivamente un
      * Crawler fornito da getCrawler.
      * @param dom  un dominio o null
      * @param dir  un percorso di una directory o null
-     * @throws IllegalArgumentException se dom e dir sono entrambi null o dom è
-     * diverso da null e non è un dominio o dir è diverso da null non è una
-     * directory o dom è null e dir non contiene l'archivio di un SiteCrawler.
+     * @throws IllegalArgumentException se dom e dir sono entrambi null o dom e'
+     * diverso da null e non e' un dominio o dir e' diverso da null non e' una
+     * directory o dom e' null e dir non contiene l'archivio di un SiteCrawler.
      * @throws IOException se accade un errore durante l'accesso all'archivio
      * del SiteCrawler
      * @return un SiteCrawler */

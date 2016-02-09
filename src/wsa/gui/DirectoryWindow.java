@@ -20,7 +20,6 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import src.wsa.web.SiteCrawler;
 import src.wsa.web.WebFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -32,20 +31,21 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+/** La finestra di "Nuova Esplorazione"*/
 public class DirectoryWindow {
     static Stage stage; //stage principale
     static ObservableList<String> listItems = FXCollections.observableArrayList(); //lista degli items nella listview
     static private SiteCrawler siteCrawler;
 
-    /** Crea e mostra la finestra della directory
-     * @param primaryStage lo stage della finestra principale*/
-
+    /** Crea e mostra la finestra di "Nuova Esplorazione"
+     * @param primaryStage il Main stage*/
     public static void  showDirectoryWindow(Stage primaryStage){
-        stage = new Stage();
         listItems.clear();
-        stage.setTitle("Directory");
-        stage.initModality(Modality.WINDOW_MODAL);  //setta la finestra in modo tale da
-        stage.initOwner(primaryStage);              // non poter cliccare nella finestra principale
+
+        stage = new Stage();
+        stage.setTitle("Nuova Esplorazione");
+        stage.initModality(Modality.WINDOW_MODAL);
+        stage.initOwner(primaryStage);
 
         Scene finestra = new Scene(createDirectoryWindow(primaryStage), 570, 400);
 
@@ -55,9 +55,8 @@ public class DirectoryWindow {
     }
 
 
-    /** Crea la parte centrale della finestra della directoryWindow
-     * @return la parte centrale della finestra
-     */
+    /** Crea la parte relativa ai seeds della finestra di "Nuova Esplorazione"
+     * @return la parte relativa ai seeds*/
     private static Parent list(){
         //parte sinistra per aggiungere seeds
         Text seedLbl = new Text(" Aggiungi seed:");
@@ -66,10 +65,9 @@ public class DirectoryWindow {
         VBox seeds = WindowsManager.createVBox(10, 10, Pos.TOP_LEFT, seedLbl, insertSeed);
         seeds.getChildren().add(info);
 
-        //parte destra con la lsitView
+        //parte destra con la listView
         ListView list = new ListView();
         list.setItems(listItems);
-
 
         //parte centrale con i bottoni e le relative immagini
         Image image= new Image(WindowsManager.class.getResourceAsStream("/rsz_blu.png"));
@@ -84,22 +82,20 @@ public class DirectoryWindow {
         seeds.prefWidthProperty().bind(center.widthProperty().multiply(0.4));
         buttons.prefWidthProperty().bind(center.widthProperty().multiply(0.1));
 
-
-        //listner
+        //listner dei controlli di questa finestra
         listListner(list, insertSeed, add, remove);
 
         return center;
 
     }
 
-    /** Comprende tutti i listner dei controlli nella parte centrale della finestra
+    /** Comprende tutti i listner dei controlli nella parte relativa ai seeds della finestra "Nuova Esplorazione"
      * @param list la listView principale
      * @param insertSeed textField per inserire seeds
      * @param add bottone per aggiungere seeds
      * @param remove bottone per rimuovere seeds
      */
     private static void listListner(ListView list, TextField insertSeed, Button add, Button remove){
-
         insertSeed.setOnAction(e -> {
             if (!insertSeed.getText().equals("") && !listItems.contains(insertSeed.getText())){
                 listItems.add(insertSeed.getText());
@@ -107,29 +103,23 @@ public class DirectoryWindow {
             }
         });
 
-
         add.setOnAction(e -> {
             if (!insertSeed.getText().equals("") && !listItems.contains(insertSeed.getText())){
                 listItems.add(insertSeed.getText());
                 insertSeed.setText("");
             }
-
         });
-
 
         remove.setOnAction(e -> {
             int i = list.getSelectionModel().getSelectedIndex();
-            if (i != -1) {
+            if (i != -1)
                 listItems.remove(i);
-            }
         });
-
     }
 
 
 
     /** Crea la finestra alla pressione del pulsante start*/
-
     private static Parent createDirectoryWindow(Stage primaryStage){
         Separator separator1 = new Separator();
         Separator separator2 = new Separator();
@@ -154,7 +144,6 @@ public class DirectoryWindow {
         HBox.setHgrow(directoryTxt, Priority.ALWAYS);
         VBox vb = WindowsManager.createVBox(10, 0, Pos.CENTER, null, separator1, list(), separator2, spunta, directory);
 
-
         //crea la parte finale della finestra con i bottoni "ok" e "chiudi"
         Image image= new Image(WindowsManager.class.getResourceAsStream("/rsz_tick.png"));
         Button ok = WindowsManager.createButton("OK", 80, 30, image, false);
@@ -175,20 +164,19 @@ public class DirectoryWindow {
         return pane;
     }
 
-    /** tutti i listner della finestra tranne quelli della parte dentrale
+    /** Tutti i listner della finestra tranne quelli della parte relativa ai seeds
      * @param spunta il checkbox che fa disabilitare l'inserimento della directory se disattivato
-     * @param directory il box dei controlli per l0inserimento della directory
+     * @param directory il box dei controlli per l'inserimento della directory
      * @param directoryLbl la label dell'inserimento della directory
      * @param puntiniBtn  bottone per scegliere la directory
      * @param directoryTxt textField dove inserire il percorso della directory
      * @param dominionTxt textField dove inserire il dominio
      * @param primaryStage lo stage della finestra principale
-     * @param ok bottone per confermare il tutto
-     * @param chiudi bottone per chiudere la fienstra senza confermare
+     * @param ok bottone di conferma
+     * @param chiudi bottone di chiusura
      */
     private static void directoryListner(CheckBox spunta, HBox directory, Text directoryLbl, Button puntiniBtn, TextField directoryTxt, TextField dominionTxt, Stage primaryStage,
                                             Button ok, Button chiudi){
-
         spunta.setOnAction(e -> {
             if (!spunta.isSelected()) {
                 directory.setDisable(true);
@@ -196,8 +184,6 @@ public class DirectoryWindow {
             } else {
                 directory.setDisable(false);
                 directoryLbl.setFill(Color.web("#000000"));
-
-
             }
         });
 
@@ -206,11 +192,8 @@ public class DirectoryWindow {
             File selectedDirectory = directoryChooser.showDialog(stage);
             directoryChooser.setTitle("Scegli Directory");
 
-            if (selectedDirectory != null) {
+            if (selectedDirectory != null)
                 directoryTxt.setText(selectedDirectory.toString());
-            }
-
-
         });
 
         dominionTxt.setOnAction(e -> {
@@ -220,17 +203,16 @@ public class DirectoryWindow {
                 a.getChildren().get(i).setDisable(false);
             }
             stage.close();
-
         });
 
-
         ok.setOnAction(e -> new Thread(() -> siteCrawlerStart(primaryStage, dominionTxt, directoryTxt)).start());
-
         chiudi.setOnAction(e -> stage.close());
-
     }
 
-
+    /** Attivato alla pressione del bottone di conferma, prende i dati immessi e li utilizza per creare un nuovo SiteCrawler.
+     * @param primaryStage il Main stage
+     * @param dominioTxt la casella di testo del dominio
+     * @param directoryTxt la casella di testo della directory*/
     private static void siteCrawlerStart(Stage primaryStage, TextField dominioTxt, TextField directoryTxt){
         String dominio = null;
         String directory = null;
@@ -245,14 +227,12 @@ public class DirectoryWindow {
             });
             return;
         }
-            dominio = dominioTxt.getText();
-
+        dominio = dominioTxt.getText();
 
         if (!directoryTxt.isDisabled()){
             directory = directoryTxt.getText();
-            if(Files.exists(Paths.get(directory))  &&  !directory.equals("")){
+            if(Files.exists(Paths.get(directory))  &&  !directory.equals(""))
                 path = Paths.get(directory);
-            }
             else{
                 Platform.runLater(() -> {
                     Alert alertt = WindowsManager.creaAlert(Alert.AlertType.ERROR, "Errore", "Percorso inesistente");
@@ -262,42 +242,42 @@ public class DirectoryWindow {
             }
         }
 
-
         VBox centerBox = (VBox) stage.getScene().getRoot().getChildrenUnmodifiable().get(1);
         HBox listaBox = (HBox) centerBox.getChildren().get(1);
         ListView listSeeds = (ListView) listaBox.getChildren().get(2);
         seeds = new ArrayList<>(listSeeds.getItems());
 
         try {
-            MainGUI.ID++;
+            Main.ID++;
             dom = new URI(dominio);
             SiteCrawler siteCrawler = WebFactory.getSiteCrawler(dom, path);
+
             final URI finalDom = dom;
             Platform.runLater(() -> {
-                MainGUI.tabPane.getTabs().remove(MainGUI.guidaTab);
-
+                Main.tabPane.getTabs().remove(Main.guidaTab);
                 Object[] objects = new Object[7];
+
                 Tab tab = new Tab("In Download");
                 tab.setTooltip(new Tooltip(finalDom.toString()));
                 ObservableList<UriTableView> fx = FXCollections.observableArrayList();
                 objects[0] = siteCrawler;
                 objects[1] = fx;
-                objects[3] = new HashMap<URI,Integer[]>();
-                objects[4]=finalDom;
-                objects[5]=0; //max link in una pagina
-                objects[6]=0; //uri interni al dominio
+                objects[3] = new HashMap<URI,Integer[]>(); //statistiche di un URI
+                objects[4] = finalDom;
+                objects[5] = 0; //max link in una pagina
+                objects[6] = 0; //uri interni al dominio
 
-                MainGUI.tabCrawlers.put(tab,MainGUI.ID);
-                MainGUI.activeCrawlers.put(MainGUI.ID,objects);
+                Main.tabCrawlers.put(tab, Main.ID); //mappa una tab con un ID
+                Main.activeCrawlers.put(Main.ID,objects); //mappa un ID con l'array objects[]
 
-                MainGUI.tabPane.getTabs().add(tab);
-                MainGUI.tabPane.getSelectionModel().select(tab);
+                Main.tabPane.getTabs().add(tab); //aggiunge la tab
+                Main.tabPane.getSelectionModel().select(tab); //seleziona la tab
 
-                SplitPane sp = MainGUI.tableView();
+                SplitPane sp = Main.tableView();
                 tab.setContent(sp);
                 objects[2] = sp;
 
-                MainGUI.activeCrawlers.put(MainGUI.ID,objects);
+                Main.activeCrawlers.put(Main.ID,objects);
 
                 if (seeds.isEmpty()) siteCrawler.addSeed(finalDom);
                 else {
@@ -312,38 +292,31 @@ public class DirectoryWindow {
                 }
                 siteCrawler.start();
 
-                Image pause = new Image(MainGUI.class.getResourceAsStream("/rsz_1pause.png"));
-                MainGUI.suspendBtn.setGraphic(new ImageView(pause));
-                MainGUI.suspendBtn.setDisable(false);
-                MainGUI.stopBtn.setDisable(false);
-                MainGUI.piu.setDisable(false);
-                MainGUI.grafico.setDisable(false);
+                Image pause = new Image(Main.class.getResourceAsStream("/rsz_1pause.png"));
+                Main.suspendBtn.setGraphic(new ImageView(pause));
+                Main.suspendBtn.setDisable(false);
+                Main.stopBtn.setDisable(false);
+                Main.piu.setDisable(false);
+                Main.grafico.setDisable(false);
             });
 
         } catch (IOException | URISyntaxException | IllegalArgumentException e) {
-            if(MainGUI.tabPane.getTabs().isEmpty())
-                MainGUI.tabPane.getTabs().add(MainGUI.guidaTab);
+            if(Main.tabPane.getTabs().isEmpty())
+                Main.tabPane.getTabs().add(Main.guidaTab);
+
             Platform.runLater(() -> {
-                Alert alert = WindowsManager.creaAlert(Alert.AlertType.ERROR,"Errore", e.getMessage());
+                Alert alert = WindowsManager.creaAlert(Alert.AlertType.ERROR,"Errore", e.toString());
                 alert.showAndWait();
             });
             return;
         }
 
-
         Platform.runLater(() -> {
             stage.close();
             HBox a = (HBox)primaryStage.getScene().getRoot().getChildrenUnmodifiable().get(0);
 
-            for(int i=2; i<=5; i++){
+            for(int i=2; i<=5; i++)
                 a.getChildren().get(i).setDisable(false);
-            }
         });
-
-
-    }
-
-    public static SiteCrawler getSiteCrawler(){
-        return siteCrawler;
     }
 }

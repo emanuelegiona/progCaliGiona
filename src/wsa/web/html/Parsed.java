@@ -8,11 +8,11 @@ import java.util.function.Consumer;
 public interface Parsed {
     /** Un nodo dell'albero di parsing della pagina */
     class Node {
-        /** Se è un elemento, è il nome del tag, altrimenti è null */
+        /** Se e' un elemento, e' il nome del tag, altrimenti e' null */
         public final String tag;
         /** Gli attributi dell'elemento o null */
         public final Map<String,String> attr;
-        /** Se è un elemento è null, altrimenti è testo */
+        /** Se e' un elemento e' null, altrimenti e' testo */
         public final String content;
 
         Node(String t, Map<String,String> a, String c) {

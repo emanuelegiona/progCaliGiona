@@ -1,7 +1,6 @@
 package src.wsa.gui;
 
 import javafx.application.Platform;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.layout.VBox;
@@ -12,16 +11,18 @@ import javafx.stage.Stage;
 import src.wsa.web.LoadResult;
 import src.wsa.web.Loader;
 import src.wsa.web.WebFactory;
-
-import java.io.ObjectInputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.Map;
 
+/** Mostra informazioni avanzate riguardo il sito aperto, come numero di immagini e numero di nodi nell'albero di parsing.*/
 public class Avanzate {
     private static Stage stage=new Stage();
     private static Loader loader=WebFactory.getLoader();
 
+    /** Crea e mostra la finestra
+     * @param primaryStage il Main stage
+     * @param uri l'URI alla quale si riferisce
+     * @param ID l'identificatore dell'esplorazione alla quale appartiene*/
     public static void showAvanzate(Stage primaryStage, URI uri, int ID){
         stage.setTitle("Avanzate");
 
@@ -38,18 +39,24 @@ public class Avanzate {
         stage.setMinWidth(300);
     }
 
-    private static Parent createAdv(URI uri,int ID){
+    /** Genera il contenuto della finestra
+     * @param uri l'URI alla quale si riferisce
+     * @param ID l'identificatore dell'esplorazione alla quale appartiene
+     * @return il contenuto della finestra
+     */
+    private static VBox createAdv(URI uri,int ID){
         Text nImm=new Text("Calcolo in corso...");
+        Text nNodes=new Text("");
+
         nImm.setFont(Font.font(17));
+        nNodes.setFont(nImm.getFont());
 
         VBox vb=WindowsManager.createVBox(25,10,null,null,new TextFlow(nImm));
 
-        Text nNodes=new Text("");
-        nNodes.setFont(nImm.getFont());
         final LoadResult[] res = {null};
         Thread t=new Thread(()-> {
             try {
-                Integer[] nums=(Integer[])MainGUI.getStats().get(uri);
+                Integer[] nums=(Integer[]) Main.getStats().get(uri);
 
                 if(nums[2]==-1 && nums[3]==-1) {
                     res[0] = loader.load(uri.toURL());
@@ -65,10 +72,11 @@ public class Avanzate {
 
                         nums[2]=numImm;
                         nums[3]=numNodes[0];
-                        Object[] objects=MainGUI.activeCrawlers.get(ID);
+
+                        Object[] objects= Main.activeCrawlers.get(ID);
                         Map<URI,Integer[]> stats=(Map<URI,Integer[]>)objects[3];
                         stats.put(uri,nums);
-                        MainGUI.activeCrawlers.put(ID,objects);
+                        Main.activeCrawlers.put(ID,objects);
                     } else {
                         nImm.setText("Errore durante il download:\n" + res[0].exc);
                         nNodes.setText("");
@@ -80,14 +88,14 @@ public class Avanzate {
                 }
 
                 Platform.runLater(() -> vb.getChildren().addAll(nImm, (nNodes.getText()==""?null:nNodes)));
-
                 Thread.currentThread().interrupt();
-            } catch (MalformedURLException e) {
-                Alert alert = WindowsManager.creaAlert(Alert.AlertType.ERROR, "Errore", "URL non valida");
-                alert.showAndWait();
-
+            } catch (Exception e) {
+                Platform.runLater(()-> {
+                    Alert alert = WindowsManager.creaAlert(Alert.AlertType.ERROR, "Errore", "URL non valida");
+                    alert.showAndWait();
+                    stage.close();
+                });
                 Thread.currentThread().interrupt();
-                stage.close();
             }
         });
         t.setDaemon(true);
