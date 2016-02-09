@@ -276,7 +276,7 @@ public class DirectoryWindow {
             Platform.runLater(() -> {
                 MainGUI.tabPane.getTabs().remove(MainGUI.guidaTab);
 
-                Object[] objects = new Object[5];
+                Object[] objects = new Object[7];
                 Tab tab = new Tab("In Download");
                 tab.setTooltip(new Tooltip(finalDom.toString()));
                 ObservableList<UriTableView> fx = FXCollections.observableArrayList();
@@ -284,6 +284,8 @@ public class DirectoryWindow {
                 objects[1] = fx;
                 objects[3] = new HashMap<URI,Integer[]>();
                 objects[4]=finalDom;
+                objects[5]=0; //max link in una pagina
+                objects[6]=0; //uri interni al dominio
 
                 MainGUI.tabCrawlers.put(tab,MainGUI.ID);
                 MainGUI.activeCrawlers.put(MainGUI.ID,objects);
@@ -319,6 +321,8 @@ public class DirectoryWindow {
             });
 
         } catch (IOException | URISyntaxException | IllegalArgumentException e) {
+            if(MainGUI.tabPane.getTabs().isEmpty())
+                MainGUI.tabPane.getTabs().add(MainGUI.guidaTab);
             Platform.runLater(() -> {
                 Alert alert = WindowsManager.creaAlert(Alert.AlertType.ERROR,"Errore", e.getMessage());
                 alert.showAndWait();
@@ -342,8 +346,4 @@ public class DirectoryWindow {
     public static SiteCrawler getSiteCrawler(){
         return siteCrawler;
     }
-
-
-
-
 }

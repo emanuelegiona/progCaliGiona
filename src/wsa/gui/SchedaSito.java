@@ -80,7 +80,11 @@ public class SchedaSito {
             }
         });
 
-        return WindowsManager.createHBox(10,5,null,null,apriSito,apriLinks);
+        Button avanzate=WindowsManager.createButton("Avanzate",100,50,null,false);
+        int ID=MainGUI.tabCrawlers.get(MainGUI.tabPane.getSelectionModel().getSelectedItem());
+        avanzate.setOnAction(e->Avanzate.showAvanzate(primaryStage,risultato.uri,ID));
+
+        return WindowsManager.createHBox(10,5,null,null,apriSito,apriLinks,avanzate);
     }
 
     private static Parent createSchedaWindow(CrawlerResult cr){

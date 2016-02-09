@@ -243,13 +243,15 @@ public class MainGUI extends Application {
                 MainGUI.tabPane.getTabs().remove(MainGUI.guidaTab);
 
                 ID++;
-                Object[] objects = new Object[5];
+                Object[] objects = new Object[7];
                 Tab tab = new Tab("In Download");
 
                 ObservableList<UriTableView> fx = FXCollections.observableArrayList();
                 objects[1] = fx;
                 objects[3] = new HashMap<URI,Integer[]>();
                 objects[4] = null;
+                objects[5]=0; //max link in una pagina
+                objects[6]=0; //uri interni al dominio
                 activeCrawlers.put(ID, objects);
 
                 FileChooser fileChooser = new FileChooser();
@@ -266,6 +268,7 @@ public class MainGUI extends Application {
                 tabCrawlers.put(tab,ID);
                 activeCrawlers.put(ID, objects);
 
+                tab.setTooltip(new Tooltip(((URI)objects[4]).toString()));
                 tabPane.getTabs().add(tab);
                 tabPane.getSelectionModel().select(tab);
 
@@ -284,7 +287,10 @@ public class MainGUI extends Application {
             } catch (IOException e1) {
                 Alert alert=WindowsManager.creaAlert(Alert.AlertType.ERROR,"Errore","Errore di I/O ("+e1.getMessage()+")");
                 alert.showAndWait();
-            } catch (Exception e2){}
+            } catch (Exception e2){
+                if(tabPane.getTabs().isEmpty())
+                    tabPane.getTabs().add(guidaTab);
+            }
         });
 
         suspendBtn.setOnAction(e -> {

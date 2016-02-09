@@ -280,7 +280,6 @@ public class SimpleSiteCrawler implements SiteCrawler{
         succDownload=crawler.getLoaded();
         toDownload=crawler.getToLoad();
         failDownload=crawler.getErrors();
-
     }
 
     private void save() throws Exception{
@@ -288,7 +287,8 @@ public class SimpleSiteCrawler implements SiteCrawler{
             Map<URI,CRSerializable> serial=new HashMap<>();
             results.forEach((u,cr)->serial.put(u,new CRSerializable(cr)));
             Map<URI,Integer[]> stats=MainGUI.getStats(identify());
-            Object[] array = {this.dom, succDownload,toDownload, failDownload, serial, stats};
+            Object[] o=MainGUI.activeCrawlers.get(identify());
+            Object[] array = {this.dom, succDownload,toDownload, failDownload, serial, stats, (int)o[5], (int)o[6]};
             WindowsManager.salvaArchivio(this.dom, savePath, array);
         }
     }
@@ -302,6 +302,8 @@ public class SimpleSiteCrawler implements SiteCrawler{
         Object[] objects=MainGUI.activeCrawlers.get(MainGUI.ID);
         objects[0]=this;
         objects[4]=this.dom;
+        objects[5]=(int)array[6];
+        objects[6]=(int)array[7];
         MainGUI.activeCrawlers.put(MainGUI.ID,objects);
 
         this.succDownload=(Set<URI>)array[1];

@@ -147,7 +147,9 @@ public class SimpleCrawler implements Crawler{
                 split[i]=x;
             }
             finale+=String.join("/",split);
-            uri=URI.create(finale);
+            try {
+                uri = URI.create(finale);
+            }catch(Exception e){}
         }
         return uri;
     }
@@ -200,6 +202,15 @@ public class SimpleCrawler implements Crawler{
 
                         if (rule.test(u)) {
                             int out=0;
+
+                            int ID=MainGUI.crID.get(this);
+                            Object[] objects=MainGUI.activeCrawlers.get(ID);
+                            if(links.size()>(int)objects[5])
+                                objects[5] = links.size();
+
+                            objects[6]=(int)objects[6]+1;
+                            MainGUI.activeCrawlers.put(ID,objects);
+
                             for (String s: links) {
                                 if (analyzeThread.isInterrupted()) {
                                     analyzeThread.interrupt();
@@ -274,7 +285,7 @@ public class SimpleCrawler implements Crawler{
             }
         }
         else {
-            Integer[] o={1,0};
+            Integer[] o={1,0,-1,-1};
             MainGUI.getStats(identify()).put(u, o);
         }
     }

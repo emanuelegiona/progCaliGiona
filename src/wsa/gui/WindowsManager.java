@@ -31,7 +31,7 @@ public class WindowsManager {
     public static VBox createVBox(int spacing, int padding, Pos alignment, Text text, Parent... elementi){
         VBox vb = new VBox();
         if (text != null) vb.getChildren().add(text);
-        vb.getChildren().addAll(elementi);
+        if (elementi!=null) vb.getChildren().addAll(elementi);
         vb.setSpacing(spacing);
         vb.setPadding(new Insets(padding));
         if (alignment != null) vb.setAlignment(alignment);
